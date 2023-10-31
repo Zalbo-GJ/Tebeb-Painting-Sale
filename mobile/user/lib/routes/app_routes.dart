@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:user/screens/client_profile.dart';
 
 import '../screens/auth_page.dart';
 import '../screens/cart_page.dart';
@@ -15,6 +16,7 @@ class AppRoutes {
   static const String landingPage = '/landingPage';
   static const String paintingDetailsPage = '/paintingDetailsPage';
   static const String profilePage = '/profilePage';
+  static const String clientProfilePage = '/clientProfilePage';
   static const String cartPage = '/cartPage';
   static const String chatPage = '/chatPage';
 
@@ -23,6 +25,7 @@ class AppRoutes {
     GetPage(name: authPage, page: () => const AuthPage()),
     GetPage(name: landingPage, page: () => const LandingPage()),
     GetPage(name: paintingDetailsPage, page: () => const PaintingDetailPage()),
+    GetPage(name: clientProfilePage, page: () => const ClientProfile()),
     GetPage(name: profilePage, page: () => const ProfilePage()),
     GetPage(name: cartPage, page: () => const CartPage()),
     GetPage(name: chatPage, page: () => const ChatPage()),
