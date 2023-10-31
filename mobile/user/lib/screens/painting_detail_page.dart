@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/get_navigation.dart';
+import 'package:user/routes/app_routes.dart';
 
 class PaintingDetailPage extends StatefulWidget {
   const PaintingDetailPage({Key? key}) : super(key: key);
@@ -152,9 +155,9 @@ class _PaintingDetailPageState extends State<PaintingDetailPage> {
                                         key: UniqueKey(),
                                         width: MediaQuery.of(context).size.width*0.4,
                                         height: 80,
-                                        child: GestureDetector(
+                                        child: InkWell(
                                           onTap: (){
-                                            print("hello");
+                                            Get.toNamed(AppRoutes.clientProfilePage);
                                           },
                                           child: Container(
                                             decoration: BoxDecoration(
