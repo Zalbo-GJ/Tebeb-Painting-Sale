@@ -15,8 +15,6 @@ dependencies:
   get: ^4.6.5
   dio:
   another_flushbar:
-  image_picker: ^1.0.4
-  path_provider: ^2.1.1
   flutter:
     sdk: flutter
   image_picker: ^1.0.4
