@@ -29,7 +29,7 @@ public class UserController {
 
     //Login
     @PostMapping(value = "/login")
-    public ResponseEntity<?> login(@RequestBody LoginForm loginForm){
+    public ResponseEntity<?> login(@RequestBody LoginForm loginForm) {
         Map<String, Object> response = new HashMap<>();
         switch (userService.login(loginForm)) {
             case "user" -> {
@@ -44,12 +44,12 @@ public class UserController {
         String token = userService.login(loginForm);
         User user = userService.getUserByEmail(loginForm.getEmail());
         user.setPassword("null");
-        return new ResponseEntity<>(user,HttpStatus.OK);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     //GOOGLE signup
     @PostMapping(value = "/register/{id_token}")
-    public ResponseEntity<Map<String, Object>> register(@PathVariable String name, @PathVariable String id_token){
+    public ResponseEntity<Map<String, Object>> register(@PathVariable String name, @PathVariable String id_token) {
         Map<String, Object> response = new HashMap<>();
         // Verify the ID token with Google
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
@@ -59,38 +59,38 @@ public class UserController {
         try {
             idToken = verifier.verify(id_token);
         } catch (GeneralSecurityException | IOException e) {
-            response.put("message","invalid token");
+            response.put("message", "invalid token");
             // Handle the exception
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         if (idToken == null) {
-            response.put("message","invalid token");
+            response.put("message", "invalid token");
             // Invalid ID token
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         // Get the user's email from the ID token
         String email = idToken.getPayload().getEmail();
         System.out.println(email);
         User user = userService.getUserByEmail(email);
-        if(user != null){
-            response.put("message","user found");
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+        if (user != null) {
+            response.put("message", "user found");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
         User user1 = null;
         user1.setEmail(email);
         user1.setRole(User.Role.USER);
         userService.createUser(user1);
 
-        response.put("email",email);
-        response.put("role",user.getRole());
-        return new ResponseEntity<>(response,HttpStatus.OK);
+        response.put("email", email);
+        response.put("role", user.getRole());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     //GOOGLE login
     @PostMapping(value = "/login-with-google/{id_token}")
-    public ResponseEntity<Map<String, Object>> loginWithGoogle(@PathVariable String id_token){
+    public ResponseEntity<Map<String, Object>> loginWithGoogle(@PathVariable String id_token) {
         Map<String, Object> response = new HashMap<>();
         // Verify the ID token with Google
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
@@ -100,44 +100,44 @@ public class UserController {
         try {
             idToken = verifier.verify(id_token);
         } catch (GeneralSecurityException | IOException e) {
-            response.put("message","invalid token");
+            response.put("message", "invalid token");
             // Handle the exception
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         if (idToken == null) {
-            response.put("message","invalid token");
+            response.put("message", "invalid token");
             // Invalid ID token
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         // Get the user's email from the ID token
         String email = idToken.getPayload().getEmail();
         System.out.println(email);
         User user = userService.getUserByEmail(email);
-        if(user == null){
-            response.put("message","user not found");
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+        if (user == null) {
+            response.put("message", "user not found");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-        response.put("email",email);
-        response.put("role",user.getRole());
-        return new ResponseEntity<>(response,HttpStatus.OK);
+        response.put("email", email);
+        response.put("role", user.getRole());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     //UPLOAD profile picture of user
     @PutMapping("/profile_picture/{id}")
     public ResponseEntity<Map<String, Object>> addProfilePicture(@RequestParam("image") MultipartFile image, @PathVariable String id) throws IOException, ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
         Map<String, Object> response = new HashMap<>();
-        String r =userService.addProfilePicture(id, image);
+        String r = userService.addProfilePicture(id, image);
 
         switch (r) {
             case "not found" -> {
                 response.put("message", "user not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
-            case "client" -> {
-                response.put("message", "failed to upload!");
-                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            case "size" -> {
+                response.put("message", "photo size is too big!");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "added" -> {
                 response.put("message", "uploaded successfully");
@@ -158,46 +158,54 @@ public class UserController {
         String status = userService.createUser(user);
         switch (status) {
             case "name" -> {
-                response.put("message","name");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                response.put("message", "name");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "email" -> {
-                response.put("message","email");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                response.put("message", "email");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            case "phone" -> {
+                response.put("message", "phone number exists");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            case "username" -> {
+                response.put("message", "username exists");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "phoneCheck" -> {
-                response.put("message","invalid phone number : rewrite as +251xxxxxxxxx");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                response.put("message", "invalid phone number : rewrite as +251xxxxxxxxx");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "emailCheck" -> {
-                response.put("message","invalid email");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                response.put("message", "invalid email");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "added" -> {
-                response.put("message","created");
+                response.put("message", "created");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
-        response.put("message","Unknown error, BUG");
+        response.put("message", "Unknown error, BUG");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //GET all users
     @GetMapping
     public ResponseEntity<List<User>> getUsers() {
-        return new ResponseEntity<>(userService.getUsers(),HttpStatus.OK);
+        return new ResponseEntity<>(userService.getUsers(), HttpStatus.OK);
     }
 
     //GET user by ID
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable String id){
-        return new ResponseEntity<>(userService.getUserById(id),HttpStatus.OK);
+    public ResponseEntity<User> getUserById(@PathVariable String id) {
+        return new ResponseEntity<>(userService.getUserById(id), HttpStatus.OK);
     }
 
     //GET user by email
     @GetMapping("/email/{email}")
-    public ResponseEntity<User> getUserByEmail(@PathVariable String email){
-        return new ResponseEntity<>(userService.getUserByEmail(email),HttpStatus.OK);
+    public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
+        return new ResponseEntity<>(userService.getUserByEmail(email), HttpStatus.OK);
     }
 
     //UPDATE name and email
@@ -208,29 +216,29 @@ public class UserController {
         String status = userService.updateUser(id, user);
 
         switch (status) {
-            case "user" ->{
-                response.put("message","User not found");
+            case "user" -> {
+                response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
             }
-            case "email" ->{
-                response.put("message","matching email found");
-                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            case "email" -> {
+                response.put("message", "matching email found");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "invalid email" ->{
-                response.put("message","invalid email");
-                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            case "invalid email" -> {
+                response.put("message", "invalid email");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "invalid phone" ->{
-                response.put("message","invalid phone");
-                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            case "invalid phone" -> {
+                response.put("message", "invalid phone");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "updated" ->{
-                response.put("message","updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+            case "updated" -> {
+                response.put("message", "updated");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
-        response.put("message","Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        response.put("message", "Unknown error");
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //ADD painting to the bought painting list
@@ -241,17 +249,17 @@ public class UserController {
         String status = userService.addPaintingToBoughtPaintingList(id, paintingid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "updated" ->{
-                response.put("message","updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+            case "updated" -> {
+                response.put("message", "updated");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
-        response.put("message","Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        response.put("message", "Unknown error");
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //ADD painting to the saved painting list
@@ -262,17 +270,17 @@ public class UserController {
         String status = userService.addPaintingToSavedPaintingList(id, paintingid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "updated" ->{
+            case "updated" -> {
                 response.put("message", "updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //REMOVE painting from the saved painting list
@@ -283,17 +291,17 @@ public class UserController {
         String status = userService.removePaintingFromSavedPaintingList(id, paintingid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "updated" ->{
+            case "updated" -> {
                 response.put("message", "updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //ADD painting to the liked painting list
@@ -304,21 +312,21 @@ public class UserController {
         String status = userService.addPaintingToLikedPaintingList(id, paintingid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "already liked" ->{
+            case "already liked" -> {
                 response.put("message", "already liked");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
-            case "updated" ->{
+            case "updated" -> {
                 response.put("message", "updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //REMOVE painting to the liked painting list
@@ -329,21 +337,21 @@ public class UserController {
         String status = userService.removePaintingFromLikedPaintingList(id, paintingid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "does not exist" ->{
+            case "does not exist" -> {
                 response.put("message", "this was not liked in the first place you dumb ass");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
-            case "updated" ->{
+            case "updated" -> {
                 response.put("message", "updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //ADD followed painters to the following painters list
@@ -354,25 +362,25 @@ public class UserController {
         String status = userService.addToFollowingPaintersList(id, clientid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "client" ->{
+            case "client" -> {
                 response.put("message", "Client not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "already followed" ->{
+            case "already followed" -> {
                 response.put("message", "already followed - your front end is shit");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
-            case "updated" ->{
+            case "updated" -> {
                 response.put("message", "updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //REMOVE followed painters to the following painters list
@@ -383,34 +391,42 @@ public class UserController {
         String status = userService.removeFromFollowingPaintersList(id, clientid);
 
         switch (status) {
-            case "user" ->{
+            case "user" -> {
                 response.put("message", "User not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "client" ->{
+            case "client" -> {
                 response.put("message", "Client not found");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "not followed" ->{
+            case "not followed" -> {
                 response.put("message", "not followed in the first place - you can't code!");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
-            case "updated" ->{
+            case "updated" -> {
                 response.put("message", "updated");
-                return new ResponseEntity<>(response,HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //DELETE user
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
-        int status = userService.deleteUser(id);
-        if (status == 0)
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        else
-            return new ResponseEntity<>("Deleted",HttpStatus.OK);
+        String status = userService.deleteUser(id);
+        switch (status) {
+            case "not found" -> {
+                return new ResponseEntity<>("User not found!", HttpStatus.OK);
+            }
+            case "deleted" -> {
+                return new ResponseEntity<>("User deleted!", HttpStatus.OK);
+            }
+            case "empty" -> {
+                return new ResponseEntity<>("User deleted - profile picture not found!", HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>("Unknown error!", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

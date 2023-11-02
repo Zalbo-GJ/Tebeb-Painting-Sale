@@ -147,10 +147,10 @@ public class ClientService {
         client.setArtistName(client.getArtistName().toLowerCase());
         client.setEmail(client.getEmail().toLowerCase());
 
-        //checks if phone is valid using a method
-        boolean phone = isValidPhoneNumber(client.getPhoneNumber());
-        if (!phone)
-            return "phoneCheck";
+//        //checks if phone is valid using a method
+//        boolean phone = isValidPhoneNumber(client.getPhoneNumber());
+//        if (!phone)
+//            return "phoneCheck";
 
         //checks if email is valid using a method
         boolean emailCheck = isValidEmail(client.getEmail());
@@ -265,10 +265,10 @@ public class ClientService {
         if (!email)
             return "invalid email";
 
-        //validate phone number structure
-        boolean phone = isValidPhoneNumber(client.getPhoneNumber());
-        if (!phone)
-            return "invalid phone";
+//        //validate phone number structure
+//        boolean phone = isValidPhoneNumber(client.getPhoneNumber());
+//        if (!phone)
+//            return "invalid phone";
 
         //temporarily delete the client for checking purpose
         clientRepository.deleteById(id);
@@ -367,12 +367,12 @@ public class ClientService {
         if (clientTempo == null)
             return "client";
 
+        //check if follower is 0
+        if (clientTempo.getFollowers() == 0)
+            return "zero";
+
         //add follower
         clientTempo.setFollowers(clientTempo.getFollowers() - 1);
-
-        //check if user exists
-
-        //write code...
 
 
         //delete client to update and upload the savedPainting

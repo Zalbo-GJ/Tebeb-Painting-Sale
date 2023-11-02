@@ -1,8 +1,5 @@
 package com.tibeb.painting;
 
-import io.imagekit.sdk.exceptions.*;
-import io.imagekit.sdk.models.FileCreateRequest;
-import io.imagekit.sdk.models.results.Result;
 import org.bson.BsonBinarySubType;
 import org.bson.types.Binary;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +12,26 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
+import io.imagekit.sdk.exceptions.*;
+import io.imagekit.sdk.models.FileCreateRequest;
+import io.imagekit.sdk.models.results.Result;
 import io.imagekit.sdk.ImageKit;
 import io.imagekit.sdk.config.Configuration;
 import io.imagekit.sdk.utils.Utils;
+
+
+import net.coobird.thumbnailator.Thumbnails;
+import javax.imageio.ImageIO;
 
 @Service
 public class PaintingService {
@@ -42,37 +50,68 @@ public class PaintingService {
 
     public PaintingService() {}
 
-    //UPDATE add image of painting
     public String addImage(String id, MultipartFile file) throws IOException, ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
 
-        //IMAGE upload configuration
-        ImageKit imageKit = ImageKit.getInstance();
-        Configuration config = new Configuration(publicKey, privateKey, urlEndpoint);
-        imageKit.setConfig(config);
+        // Check if the file size is above 1MB
+        if (file.getSize() > 1048576) {
+            // Compress the image
+            BufferedImage compressedImage = compressImage(file, 1024);
+            // Convert the compressed image to byte array
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ImageIO.write(compressedImage, "jpg", bos);
+            byte[] compressedImageData = bos.toByteArray();
 
-        Optional<Painting> optionalPainting = paintingRepository.findById(id);
-        if (optionalPainting.isEmpty())
-            return "not found";
+            // Upload the compressed image
+            FileCreateRequest fileCreateRequest = new FileCreateRequest(compressedImageData, id + ".jpg");
+            Result result = ImageKit.getInstance().upload(fileCreateRequest);
 
-        //upload the byte[] of the multipart file and set the name to the painting id for later retrieval
-        FileCreateRequest fileCreateRequest =new FileCreateRequest(file.getBytes(),  id + ".jpg");
-        Result result=ImageKit.getInstance().upload(fileCreateRequest);
+            // Save the image URL and file ID to the painting model
+            Painting painting = paintingRepository.findById(id).orElse(null);
+            if (painting != null) {
+                painting.setImageLink(result.getUrl());
+                painting.setImageId(result.getFileId());
+                paintingRepository.save(painting);
+                return "added";
+            }
+        } else {
+            // Upload the original image
+            FileCreateRequest fileCreateRequest = new FileCreateRequest(file.getBytes(), id + ".jpg");
+            Result result = ImageKit.getInstance().upload(fileCreateRequest);
 
-        //retrieve the painting
-        Painting painting = optionalPainting.get();
+            // Save the image URL and file ID to the painting model
+            Painting painting = paintingRepository.findById(id).orElse(null);
+            if (painting != null) {
+                painting.setImageLink(result.getUrl());
+                painting.setImageId(result.getFileId());
+                paintingRepository.save(painting);
+                return "added";
+            }
+        }
 
-        //save the image url to the painting model
-        painting.setImageLink(result.getUrl());
-
-        //save the file id for deletion
-        painting.setImageId(result.getFileId());
-
-        //DELETE old and save the updated painting model
-        paintingRepository.deleteById(id);
-        paintingRepository.save(painting);
-        return "added";
+        return "not found";
     }
 
+    private BufferedImage compressImage(MultipartFile file, int maxSizeKB) throws IOException {
+        BufferedImage image = ImageIO.read(file.getInputStream());
+
+        // Calculate the target size based on the max size in kilobytes
+        long targetSizeBytes = maxSizeKB * 1024;
+        long originalSizeBytes = file.getSize();
+
+        // Calculate the compression ratio
+        double compressionRatio = Math.sqrt(originalSizeBytes / (double) targetSizeBytes);
+
+        // Calculate the new dimensions based on the compression ratio
+        int newWidth = (int) (image.getWidth() / compressionRatio);
+        int newHeight = (int) (image.getHeight() / compressionRatio);
+
+        // Create a new resized image
+        Image resizedImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+        BufferedImage compressedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
+        compressedImage.getGraphics().drawImage(resizedImage, 0, 0, null);
+
+        return compressedImage;
+    }
     //POST new painting
     public String addPainting(Painting painting) throws IOException {
         painting.setImageLink(null);
@@ -116,15 +155,20 @@ public class PaintingService {
         return mongoTemplate.find(query, Painting.class);
     }
 
-    //search by partial name of the artist
-    public List<Painting> getPaintingByArtist(String partialString) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("artist").regex(".*" + partialString + ".*"));
-        return mongoTemplate.find(query, Painting.class);
+    //search by clientId
+    public List<Painting> getPaintingByClientId(String partialString) {
+        Optional<List<Painting>> optionalPaintingList = paintingRepository.findByClientId(partialString);
+
+        return optionalPaintingList.orElse(null);
+
+//        Query query = new Query();
+//        query.addCriteria(Criteria.where("clientId").regex(".*" + partialString + ".*"));
+//        return mongoTemplate.find(query, Painting.class);
     }
 
     //search by partial name of the genre
     public List<Painting> getPaintingByGenre(String partialString) {
+        partialString = partialString.toUpperCase();
         Query query = new Query();
         query.addCriteria(Criteria.where("genre").regex(".*" + partialString + ".*"));
         return mongoTemplate.find(query, Painting.class);
@@ -149,7 +193,7 @@ public class PaintingService {
         if(nameCheck.isEmpty()){
             // attributes that are only allowed to be changed
             backUp.setName(painting.getName());
-            backUp.setArtist(painting.getArtist());
+            backUp.setClientId(painting.getClientId());
             backUp.setWidth(painting.getWidth());
             backUp.setHeight(painting.getHeight());
             backUp.setGenre(painting.getGenre());
@@ -175,6 +219,11 @@ public class PaintingService {
 
         //saving a backup
         Painting painting = optionalPainting.get();
+
+        //checking if it is already sold
+        if (painting.isSold())
+            return "already sold";
+
         painting.setSold(true);
 
         //delete old painting
@@ -194,15 +243,17 @@ public class PaintingService {
             Configuration config = new Configuration(publicKey, privateKey, urlEndpoint);
             imageKit.setConfig(config);
 
-            //DELETE the painting from db
-            paintingRepository.deleteById(id);
-
             //DELETE image from db
             try{
                 imageKit.deleteFile(optionalPainting.get().getImageId());
             } catch (BadRequestException e) {
+                //DELETE the painting from db
+                paintingRepository.deleteById(id);
                 return "empty";
             }
+
+            //DELETE the painting from db
+            paintingRepository.deleteById(id);
 
             return "deleted";
         }else {
@@ -240,6 +291,10 @@ public class PaintingService {
 
         //saving a backup
         Painting painting = optionalPainting.get();
+
+        if (painting.getLikes() == 0)
+            return "zero";
+
         painting.setLikes((painting.getLikes()) - 1);
 
         //delete old painting
@@ -266,5 +321,57 @@ public class PaintingService {
 //        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "dateAdded"));
 //        return paintingRepository.findAll(pageRequest).getContent();
 //    }
+
+
+
+
+
+
+//    public byte[] compressImage(MultipartFile file, int maxSizeKB) throws IOException {
+//        // Read the input image file
+//        byte[] originalImageBytes = file.getBytes();
+//
+//        // Create a ByteArrayOutputStream to hold the compressed image bytes
+//        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//
+//        // Get the dimensions of the image
+//        BufferedImage originalImage = ImageIO.read(file.getInputStream());
+//        int width = originalImage.getWidth();
+//        int height = originalImage.getHeight();
+//
+//        // Calculate the initial quality based on the desired file size
+//        float quality = 1.0f;
+//        long fileSize = originalImageBytes.length;
+//        if (fileSize > maxSizeKB * 1024) {
+//            quality = (float) (maxSizeKB * 1024) / fileSize;
+//        }
+//
+//        // Compress the image iteratively by reducing the quality until the size is below maxSizeKB
+//        byte[] compressedImageBytes = originalImageBytes;
+//        while (compressedImageBytes.length > maxSizeKB * 1024) {
+//            // Reduce the quality
+//            quality -= 0.1f;
+//
+//            // Clear the output stream
+//            outputStream.reset();
+//
+//            // Compress the image using Thumbnailator library with the current quality setting
+//            Thumbnails.of(file.getInputStream())
+//                    .size(width, height)
+//                    .outputQuality(quality)
+//                    .outputFormat("JPEG")
+//                    .toOutputStream(outputStream);
+//
+//            // Get the compressed image bytes
+//            compressedImageBytes = outputStream.toByteArray();
+//        }
+//
+//        // Close the output stream
+//        outputStream.close();
+//
+//        return compressedImageBytes;
+//    }
+
+
 
 }

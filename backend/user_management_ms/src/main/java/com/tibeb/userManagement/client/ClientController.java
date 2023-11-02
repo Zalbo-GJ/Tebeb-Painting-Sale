@@ -34,11 +34,11 @@ public class ClientController {
         switch (clientService.login(loginForm)) {
             case "user" -> {
                 response.put("message", "user not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "password" -> {
                 response.put("message", "password incorrect");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         String token = clientService.login(loginForm);
@@ -60,13 +60,13 @@ public class ClientController {
         } catch (GeneralSecurityException | IOException e) {
             response.put("message","invalid token");
             // Handle the exception
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
 
         if (idToken == null) {
             response.put("message","invalid token");
             // Invalid ID token
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
 
         // Get the client's email from the ID token
@@ -75,7 +75,7 @@ public class ClientController {
         Client client = clientService.getClientByEmail(email);
         if(client != null){
             response.put("message","client found");
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
         Client client1 = null;
         client1.setEmail(email);
@@ -101,13 +101,13 @@ public class ClientController {
         } catch (GeneralSecurityException | IOException e) {
             response.put("message","invalid token");
             // Handle the exception
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
 
         if (idToken == null) {
             response.put("message","invalid token");
             // Invalid ID token
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
 
         // Get the client's email from the ID token
@@ -116,7 +116,7 @@ public class ClientController {
         Client client = clientService.getClientByEmail(email);
         if(client == null){
             response.put("message","client not found");
-            return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
         response.put("email",email);
         response.put("role",client.getRole());
@@ -132,11 +132,11 @@ public class ClientController {
         switch (r) {
             case "not found" -> {
                 response.put("message", "client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "client" -> {
                 response.put("message", "failed to upload!");
-                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "added" -> {
                 response.put("message", "uploaded successfully");
@@ -144,7 +144,7 @@ public class ClientController {
             }
             default -> {
                 response.put("message", "unknown error");
-                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
     }
@@ -158,11 +158,11 @@ public class ClientController {
         switch (r) {
             case "not found" -> {
                 response.put("message", "client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "client" -> {
                 response.put("message", "failed to upload!");
-                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "added" -> {
                 response.put("message", "uploaded successfully");
@@ -170,7 +170,7 @@ public class ClientController {
             }
             default -> {
                 response.put("message", "unknown error");
-                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
     }
@@ -184,19 +184,19 @@ public class ClientController {
         switch (status) {
             case "name" -> {
                 response.put("message","name");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "email" -> {
                 response.put("message","email");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "phoneCheck" -> {
                 response.put("message","invalid phone number : rewrite as +251xxxxxxxxx");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "emailCheck" -> {
                 response.put("message","invalid email");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "added" -> {
                 response.put("message","created");
@@ -204,7 +204,7 @@ public class ClientController {
             }
         }
         response.put("message","Unknown error, BUG");
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     //GET all clients
@@ -241,19 +241,19 @@ public class ClientController {
         switch (status) {
             case "client" ->{
                 response.put("message","Client not found");
-                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "email" ->{
                 response.put("message","matching email found");
-                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response,HttpStatus.OK);
             }
             case "invalid email" ->{
                 response.put("message","invalid email");
-                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response,HttpStatus.OK);
             }
             case "invalid phone" ->{
                 response.put("message","invalid phone");
-                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response,HttpStatus.OK);
             }
             case "updated" ->{
                 response.put("message","updated");
@@ -261,7 +261,7 @@ public class ClientController {
             }
         }
         response.put("message","Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     //ADD painting to the painting list
@@ -274,7 +274,7 @@ public class ClientController {
         switch (status) {
             case "client" ->{
                 response.put("message", "Client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "updated" ->{
                 response.put("message","updated");
@@ -282,7 +282,7 @@ public class ClientController {
             }
         }
         response.put("message","Unknown error");
-        return new ResponseEntity<>(response ,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response ,HttpStatus.OK);
     }
 
     //ADD painting to the sold painting list
@@ -295,7 +295,7 @@ public class ClientController {
         switch (status) {
             case "client" ->{
                 response.put("message", "Client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "updated" ->{
                 response.put("message", "updated");
@@ -307,7 +307,7 @@ public class ClientController {
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     //REMOVE painting from the painting list
@@ -320,7 +320,7 @@ public class ClientController {
         switch (status) {
             case "client" ->{
                 response.put("message", "Client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "updated" ->{
                 response.put("message","updated");
@@ -328,7 +328,7 @@ public class ClientController {
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     //ADD follower
@@ -341,7 +341,7 @@ public class ClientController {
         switch (status) {
             case "client" ->{
                 response.put("message", "Client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "updated" ->{
                 response.put("message", "updated");
@@ -349,7 +349,7 @@ public class ClientController {
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     //REMOVE follower
@@ -362,7 +362,11 @@ public class ClientController {
         switch (status) {
             case "client" ->{
                 response.put("message", "Client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            case "zero" ->{
+                response.put("message", "It is already zero, you can't code!");
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "updated" ->{
                 response.put("message", "updated");
@@ -370,7 +374,7 @@ public class ClientController {
             }
         }
         response.put("message", "Unknown error");
-        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     //DELETE client
@@ -378,7 +382,7 @@ public class ClientController {
     public ResponseEntity<String> deleteClient(@PathVariable String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
         int status = clientService.deleteClient(id);
         if (status == 0)
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.OK);
         else
             return new ResponseEntity<>("Deleted",HttpStatus.OK);
     }
@@ -393,11 +397,11 @@ public class ClientController {
         switch (status) {
             case "Invalid rating" ->{
                 response.put("message", "Invalid rating! ( not integer or is not in between 1 - 4 )");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "client" ->{
                 response.put("message", "Client not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "rating" ->{
                 response.put("message","updated");
@@ -405,6 +409,6 @@ public class ClientController {
             }
         }
         response.put("message","Unknown error");
-        return new ResponseEntity<>(response ,HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response ,HttpStatus.OK);
     }
 }

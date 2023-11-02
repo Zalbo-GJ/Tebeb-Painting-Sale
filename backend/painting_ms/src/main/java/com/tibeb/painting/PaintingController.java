@@ -56,7 +56,7 @@ public class PaintingController {
         String response = paintingService.addPainting(painting);
 
         if (response.equals("name")) {
-            return new ResponseEntity<>("Title already exists", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Title already exists", HttpStatus.OK);
         }  else
             return new ResponseEntity<>("Painting added", HttpStatus.OK);
     }
@@ -72,7 +72,7 @@ public class PaintingController {
     public ResponseEntity<Optional<Painting>> getPaintingById(@PathVariable String id) {
         Optional<Painting> result = paintingService.getPaintingById(id);
         if (result.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(result, HttpStatus.OK);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
@@ -81,16 +81,16 @@ public class PaintingController {
     public ResponseEntity<List<Painting>> getPaintingByName(@PathVariable String name) {
         List<Painting> result = paintingService.getPaintingByName(name);
         if (result.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(result, HttpStatus.OK);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
-    //GET painting by artist
-    @GetMapping("/artist/{artist}")
-    public ResponseEntity<List<Painting>> getPaintingByArtist(@PathVariable String artist) {
-        List<Painting> result = paintingService.getPaintingByArtist(artist);
+    //GET painting by clientId
+    @GetMapping("/clientId/{clientId}")
+    public ResponseEntity<List<Painting>> getPaintingByClientId(@PathVariable String clientId) {
+        List<Painting> result = paintingService.getPaintingByClientId(clientId);
         if (result.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(result, HttpStatus.OK);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
@@ -99,7 +99,7 @@ public class PaintingController {
     public ResponseEntity<List<Painting>> getPaintingByGenre(@PathVariable String genre) {
         List<Painting> result = paintingService.getPaintingByGenre(genre);
         if (result.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(result, HttpStatus.OK);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
@@ -107,7 +107,6 @@ public class PaintingController {
     @PutMapping("/update/{id}")
     public ResponseEntity<Map<String, Object>> updatePainting(@RequestBody Painting painting, @PathVariable String id) {
         Map<String, Object> response = new HashMap<>();
-
 
         String status = paintingService.updatePainting(id, painting);
 
@@ -119,8 +118,8 @@ public class PaintingController {
             response.put("message","Title already exists");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 
-        } else if (Objects.equals(status, "artist")){
-            response.put("message","Artist does not exist");
+        } else if (Objects.equals(status, "clientId")){
+            response.put("message","ClientId does not exist");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 
         }
@@ -143,7 +142,10 @@ public class PaintingController {
 
         if (Objects.equals(status, "not found")){
             response.put("message","Painting not found!");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else if (Objects.equals(status, "already sold")) {
+            response.put("message","Painting already sold you dumb asses!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
 
         } else{
             response.put("message","Updated successfully!");
@@ -154,11 +156,11 @@ public class PaintingController {
 
     //DELETE painting by id
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deleteMovie(@PathVariable String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
+    public ResponseEntity<String> deletePainting(@PathVariable String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
         String status = paintingService.deletePainting(id);
         switch (status) {
             case "not found" -> {
-                return new ResponseEntity<>("Painting not found!", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Painting not found!", HttpStatus.OK);
             }
             case "deleted" -> {
                 return new ResponseEntity<>("Painting deleted!", HttpStatus.OK);
@@ -197,7 +199,11 @@ public class PaintingController {
 
         if (Objects.equals(status, "not found")){
             response.put("message","Painting not found!");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } else if (Objects.equals(status, "zero")) {
+            response.put("message","the dude already has zero likes, can't be negative!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
 
         } else{
             response.put("message","Updated successfully!");
@@ -205,6 +211,5 @@ public class PaintingController {
         }
 
     }
-
 
 }

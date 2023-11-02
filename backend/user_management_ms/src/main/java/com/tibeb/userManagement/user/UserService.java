@@ -4,15 +4,11 @@ import com.tibeb.userManagement.LoginForm;
 import com.tibeb.userManagement.PaintingInfo;
 import com.tibeb.userManagement.client.Client;
 import com.tibeb.userManagement.client.ClientController;
-import io.imagekit.sdk.ImageKit;
-import io.imagekit.sdk.config.Configuration;
-import io.imagekit.sdk.exceptions.*;
-import io.imagekit.sdk.models.FileCreateRequest;
-import io.imagekit.sdk.models.results.Result;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +18,13 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+
+import io.imagekit.sdk.exceptions.*;
+import io.imagekit.sdk.models.FileCreateRequest;
+import io.imagekit.sdk.models.results.Result;
+import io.imagekit.sdk.ImageKit;
+import io.imagekit.sdk.config.Configuration;
+import io.imagekit.sdk.utils.Utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -78,9 +81,15 @@ public class UserService {
         if (optionalUser.isEmpty())
             return "not found";
 
-        //upload the byte[] of the multipart file and set the name to the user id for later retrieval
-        FileCreateRequest fileCreateRequest =new FileCreateRequest(file.getBytes(),  id + ".jpg");
-        Result result=ImageKit.getInstance().upload(fileCreateRequest);
+        Result result;
+
+        try {
+            //upload the byte[] of the multipart file and set the name to the user id for later retrieval
+            FileCreateRequest fileCreateRequest =new FileCreateRequest(file.getBytes(),  id + ".jpg");
+            result=ImageKit.getInstance().upload(fileCreateRequest);
+        } catch (FileSizeLimitExceededException e) {
+            return "size";
+        }
 
         //retrieve the user
         User user = optionalUser.get();
@@ -116,19 +125,24 @@ public class UserService {
         user.setUserName(user.getUserName().toLowerCase());
         user.setEmail(user.getEmail().toLowerCase());
 
-        //checks if phone is valid using a method
-        boolean phone = isValidPhoneNumber(user.getPhoneNumber());
-        if (!phone)
-            return "phoneCheck";
+//        //checks if phone is valid using a method
+//        boolean phone = isValidPhoneNumber(user.getPhoneNumber());
+//        if (!phone)
+//            return "phoneCheck";
 
-        //checks if email is valid using a method
-        boolean emailCheck = isValidEmail(user.getEmail());
-        if (!emailCheck)
-            return "emailCheck";
+//        //checks if email is valid using a method
+//        boolean emailCheck = isValidEmail(user.getEmail());
+//        if (!emailCheck)
+//            return "emailCheck";
 
         if (userRepository.findByEmail(user.getEmail()).isPresent())
             return "email";
 
+        if (userRepository.findByPhoneNumber(user.getPhoneNumber()).isPresent())
+            return "phone";
+
+        if (userRepository.findByUserName(user.getUserName()).isPresent())
+            return "username";
         String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
         user.setPassword(hashedPassword);
 
@@ -137,41 +151,41 @@ public class UserService {
         return "added";
     }
 
-    //Phone number checker method
-    public static boolean isValidPhoneNumber(String phoneNumber) {
-        // Check if the phone number starts with a '+'
-        if (!phoneNumber.startsWith("+")) {
-            return false;
-        }
+//    //Phone number checker method
+//    public static boolean isValidPhoneNumber(String phoneNumber) {
+//        // Check if the phone number starts with a '+'
+//        if (!phoneNumber.startsWith("+")) {
+//            return false;
+//        }
+//
+//        // Check the length of the phone number
+//        if (phoneNumber.length() < 12 || phoneNumber.length() > 15) {
+//            return false;
+//        }
+//
+//        // Check the country code
+//        String countryCode = phoneNumber.substring(1, 4);
+//        if (!countryCode.equals("251")) {
+//            return false;
+//        }
+//
+//        // Additional checks can be added here if needed
+//
+//        // If all checks pass, the phone number is valid
+//        return true;
+//    }
 
-        // Check the length of the phone number
-        if (phoneNumber.length() < 12 || phoneNumber.length() > 15) {
-            return false;
-        }
-
-        // Check the country code
-        String countryCode = phoneNumber.substring(1, 4);
-        if (!countryCode.equals("251")) {
-            return false;
-        }
-
-        // Additional checks can be added here if needed
-
-        // If all checks pass, the phone number is valid
-        return true;
-    }
-
-    //Email checker method
-    public static boolean isValidEmail(String email) {
-        // Regular expression pattern for email validation
-        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-
-        // Create a Pattern object with the email pattern
-        Pattern pattern = Pattern.compile(emailPattern);
-
-        // Check if the email matches the pattern
-        return pattern.matcher(email).matches();
-    }
+//    //Email checker method
+//    public static boolean isValidEmail(String email) {
+//        // Regular expression pattern for email validation
+//        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+//
+//        // Create a Pattern object with the email pattern
+//        Pattern pattern = Pattern.compile(emailPattern);
+//
+//        // Check if the email matches the pattern
+//        return pattern.matcher(email).matches();
+//    }
 
     //Login
     public String login(LoginForm loginForm){
@@ -222,15 +236,15 @@ public class UserService {
         if (userTempo == null)
             return "user";
 
-        //validate email structure
-        boolean email = isValidEmail(user.getEmail());
-        if (!email)
-            return "invalid email";
+//        //validate email structure
+//        boolean email = isValidEmail(user.getEmail());
+//        if (!email)
+//            return "invalid email";
 
-        //validate phone number structure
-        boolean phone = isValidPhoneNumber(user.getPhoneNumber());
-        if (!phone)
-            return "invalid phone";
+//        //validate phone number structure
+//        boolean phone = isValidPhoneNumber(user.getPhoneNumber());
+//        if (!phone)
+//            return "invalid phone";
 
         //temporarily delete the user for checking purpose
         userRepository.deleteById(id);
@@ -504,23 +518,31 @@ public class UserService {
     }
 
     //DELETE user
-    public int deleteUser(String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
+    public String deleteUser(String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
         Optional<User> optionalUser = userRepository.findById(id);
+        
+        //IMAGE upload configuration
+        ImageKit imageKit = ImageKit.getInstance();
+        Configuration config = new Configuration(publicKey, privateKey, urlEndpoint);
+        imageKit.setConfig(config);
+
         if(optionalUser.isPresent()){
-            //IMAGE upload configuration
-            ImageKit imageKit = ImageKit.getInstance();
-            Configuration config = new Configuration(publicKey, privateKey, urlEndpoint);
-            imageKit.setConfig(config);
 
-            //DELETE image from db - both profile picture and background picture
-            imageKit.deleteFile(optionalUser.get().getProfileImageId());
 
-            //DELETE the painting from db
+            //DELETE image from db
+            try{
+                imageKit.deleteFile(optionalUser.get().getProfileImageId());
+            } catch (BadRequestException e) {
+                //DELETE the user from db
+                userRepository.deleteById(id);
+                return "empty";
+            }
+
+            //DELETE the user from db
             userRepository.deleteById(id);
-
-            return 1;
+            return "deleted";
         }else {
-            return 0;
+            return "not found";
         }
     }
 }
