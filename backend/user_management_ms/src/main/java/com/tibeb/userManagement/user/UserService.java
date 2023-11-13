@@ -214,18 +214,39 @@ public class UserService {
     }
 
     //GET all users
-    public List<User> getUsers(){
-        return userRepository.findAll();
+    public List<User> getUsers() {
+        List<User> users = userRepository.findAll();
+
+        for (User user : users) {
+            // Null out the password for each user
+            user.setPassword(null);
+        }
+
+        return users;
     }
 
     //GET user by ID
-    public User getUserById(String id){
-        return userRepository.findById(id).orElse(null);
+    public User getUserById(String id) {
+        User user = userRepository.findById(id).orElse(null);
+
+        // Null out the password if the user is found
+        if (user != null) {
+            user.setPassword(null);
+        }
+
+        return user;
     }
 
     //GET user by email
-    public User getUserByEmail(String email){
-        return userRepository.findByEmail(email).orElse(null);
+    public User getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        // Null out the password if the user is found
+        if (user != null) {
+            user.setPassword(null);
+        }
+
+        return user;
     }
 
     //UPDATE name and email

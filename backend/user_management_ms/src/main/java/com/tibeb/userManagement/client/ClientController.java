@@ -227,8 +227,8 @@ public class ClientController {
 
     //GET user by region
     @GetMapping("/region/{region}")
-    public ResponseEntity<Client> getClientByRegion(@PathVariable String region){
-        return new ResponseEntity<>(clientService.getClientByRegion(region),HttpStatus.OK);
+    public ResponseEntity<List<Client>> getClientByRegion(@PathVariable String region){
+        return new ResponseEntity<>(clientService.getClientsByRegion(region),HttpStatus.OK);
     }
 
     //UPDATE name and email

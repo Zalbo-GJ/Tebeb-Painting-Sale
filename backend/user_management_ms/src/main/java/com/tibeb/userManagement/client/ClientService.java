@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -233,23 +234,58 @@ public class ClientService {
     }
 
     //GET all clients
-    public List<Client> getClients(){
-        return clientRepository.findAll();
+    public List<Client> getClients() {
+        List<Client> clients = clientRepository.findAll();
+
+        for (Client client : clients) {
+            // Null out the password for each client
+            client.setPassword(null);
+        }
+
+        return clients;
     }
 
     //GET client by ID
-    public Client getClientById(String id){
-        return clientRepository.findById(id).orElse(null);
+    public Client getClientById(String id) {
+        Client client = clientRepository.findById(id).orElse(null);
+
+        // Null out the password if the client is found
+        if (client != null) {
+            client.setPassword(null);
+        }
+
+        return client;
     }
 
     //GET client by email
-    public Client getClientByEmail(String email){
-        return clientRepository.findByEmail(email).orElse(null);
+    public Client getClientByEmail(String email) {
+        Client client = clientRepository.findByEmail(email).orElse(null);
+
+        // Null out the password if the client is found
+        if (client != null) {
+            client.setPassword(null);
+        }
+
+        return client;
     }
 
-    //GET client by region
-    public Client getClientByRegion(String region){
-        return clientRepository.findByRegion(region).orElse(null);
+    // GET clients by region
+    public List<Client> getClientsByRegion(String region) {
+        Optional<List<Client>> optionalClients = clientRepository.findByRegion(region);
+
+        if (optionalClients.isPresent()) {
+            List<Client> clients = optionalClients.get();
+
+            for (Client client : clients) {
+                // Null out the password for each client
+                client.setPassword(null);
+            }
+
+            return clients;
+        } else {
+            // Return an empty list if no clients are found for the specified region
+            return Collections.emptyList();
+        }
     }
 
     //UPDATE name and email
