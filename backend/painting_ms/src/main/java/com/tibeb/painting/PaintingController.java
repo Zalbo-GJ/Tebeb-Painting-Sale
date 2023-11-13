@@ -216,4 +216,16 @@ public class PaintingController {
 
     }
 
+
+    //FRONT PAGE RECOMMENDATION
+    @GetMapping("/front")
+    public ResponseEntity<List<List<Painting>>> forYouPage() {
+        List<List<Painting>> recommendation = new ArrayList<>();
+
+        recommendation.add(paintingService.latestPaintings());
+        recommendation.add(paintingService.mostLikedPaintings());
+
+        return new ResponseEntity<>(recommendation, HttpStatus.OK) ;
+    }
+
 }

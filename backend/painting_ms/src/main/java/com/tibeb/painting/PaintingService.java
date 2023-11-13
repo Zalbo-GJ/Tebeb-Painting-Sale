@@ -276,6 +276,20 @@ public class PaintingService {
         return paintingRepository.findAll(pageRequest).getContent();
     }
 
+    //most liked
+    public List<Painting> mostLikedPaintings() {
+        //Getting 10 of the most liked paintings
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "likes"));
+        return paintingRepository.findAll(pageRequest).getContent();
+    }
+
+    //high rating
+    public List<Painting> highRatings() {
+        //Getting the 10 highest rated paintings
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "rating"));
+        return paintingRepository.findAll(pageRequest).getContent();
+    }
+
     // take this to user ms
 //    //popular painters
 //    public List<Painting> popularPainters() {
@@ -283,5 +297,4 @@ public class PaintingService {
 //        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "dateAdded"));
 //        return paintingRepository.findAll(pageRequest).getContent();
 //    }
-
 }
