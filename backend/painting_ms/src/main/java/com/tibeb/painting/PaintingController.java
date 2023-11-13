@@ -42,6 +42,10 @@ public class PaintingController {
                 response.put("message", "uploaded successfully");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
+            case "file size" -> {
+                response.put("message", "File size too big - must be below 1Mb");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
             default -> {
                 response.put("message", "unknown error");
                 return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);

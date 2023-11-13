@@ -52,66 +52,27 @@ public class PaintingService {
 
     public String addImage(String id, MultipartFile file) throws IOException, ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
 
-        // Check if the file size is above 1MB
-        if (file.getSize() > 1048576) {
-            // Compress the image
-            BufferedImage compressedImage = compressImage(file, 1024);
-            // Convert the compressed image to byte array
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ImageIO.write(compressedImage, "jpg", bos);
-            byte[] compressedImageData = bos.toByteArray();
+        //IMAGE upload configuration
+        ImageKit imageKit = ImageKit.getInstance();
+        Configuration config = new Configuration(publicKey, privateKey, urlEndpoint);
+        imageKit.setConfig(config);
 
-            // Upload the compressed image
-            FileCreateRequest fileCreateRequest = new FileCreateRequest(compressedImageData, id + ".jpg");
-            Result result = ImageKit.getInstance().upload(fileCreateRequest);
+        // Upload the original image
+        FileCreateRequest fileCreateRequest = new FileCreateRequest(file.getBytes(), id + ".jpg");
 
-            // Save the image URL and file ID to the painting model
-            Painting painting = paintingRepository.findById(id).orElse(null);
-            if (painting != null) {
-                painting.setImageLink(result.getUrl());
-                painting.setImageId(result.getFileId());
-                paintingRepository.save(painting);
-                return "added";
-            }
-        } else {
-            // Upload the original image
-            FileCreateRequest fileCreateRequest = new FileCreateRequest(file.getBytes(), id + ".jpg");
-            Result result = ImageKit.getInstance().upload(fileCreateRequest);
+        Result result = ImageKit.getInstance().upload(fileCreateRequest);
 
-            // Save the image URL and file ID to the painting model
-            Painting painting = paintingRepository.findById(id).orElse(null);
-            if (painting != null) {
-                painting.setImageLink(result.getUrl());
-                painting.setImageId(result.getFileId());
-                paintingRepository.save(painting);
-                return "added";
-            }
+        // Save the image URL and file ID to the painting model
+        Painting painting = paintingRepository.findById(id).orElse(null);
+        if (painting != null) {
+            painting.setImageLink(result.getUrl());
+            painting.setImageId(result.getFileId());
+            paintingRepository.save(painting);
+            return "added";
         }
-
         return "not found";
     }
 
-    private BufferedImage compressImage(MultipartFile file, int maxSizeKB) throws IOException {
-        BufferedImage image = ImageIO.read(file.getInputStream());
-
-        // Calculate the target size based on the max size in kilobytes
-        long targetSizeBytes = maxSizeKB * 1024;
-        long originalSizeBytes = file.getSize();
-
-        // Calculate the compression ratio
-        double compressionRatio = Math.sqrt(originalSizeBytes / (double) targetSizeBytes);
-
-        // Calculate the new dimensions based on the compression ratio
-        int newWidth = (int) (image.getWidth() / compressionRatio);
-        int newHeight = (int) (image.getHeight() / compressionRatio);
-
-        // Create a new resized image
-        Image resizedImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-        BufferedImage compressedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
-        compressedImage.getGraphics().drawImage(resizedImage, 0, 0, null);
-
-        return compressedImage;
-    }
     //POST new painting
     public String addPainting(Painting painting) throws IOException {
         painting.setImageLink(null);
@@ -194,6 +155,7 @@ public class PaintingService {
             // attributes that are only allowed to be changed
             backUp.setName(painting.getName());
             backUp.setClientId(painting.getClientId());
+            backUp.setArtistName(painting.getArtistName());
             backUp.setWidth(painting.getWidth());
             backUp.setHeight(painting.getHeight());
             backUp.setGenre(painting.getGenre());
@@ -321,57 +283,5 @@ public class PaintingService {
 //        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "dateAdded"));
 //        return paintingRepository.findAll(pageRequest).getContent();
 //    }
-
-
-
-
-
-
-//    public byte[] compressImage(MultipartFile file, int maxSizeKB) throws IOException {
-//        // Read the input image file
-//        byte[] originalImageBytes = file.getBytes();
-//
-//        // Create a ByteArrayOutputStream to hold the compressed image bytes
-//        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//
-//        // Get the dimensions of the image
-//        BufferedImage originalImage = ImageIO.read(file.getInputStream());
-//        int width = originalImage.getWidth();
-//        int height = originalImage.getHeight();
-//
-//        // Calculate the initial quality based on the desired file size
-//        float quality = 1.0f;
-//        long fileSize = originalImageBytes.length;
-//        if (fileSize > maxSizeKB * 1024) {
-//            quality = (float) (maxSizeKB * 1024) / fileSize;
-//        }
-//
-//        // Compress the image iteratively by reducing the quality until the size is below maxSizeKB
-//        byte[] compressedImageBytes = originalImageBytes;
-//        while (compressedImageBytes.length > maxSizeKB * 1024) {
-//            // Reduce the quality
-//            quality -= 0.1f;
-//
-//            // Clear the output stream
-//            outputStream.reset();
-//
-//            // Compress the image using Thumbnailator library with the current quality setting
-//            Thumbnails.of(file.getInputStream())
-//                    .size(width, height)
-//                    .outputQuality(quality)
-//                    .outputFormat("JPEG")
-//                    .toOutputStream(outputStream);
-//
-//            // Get the compressed image bytes
-//            compressedImageBytes = outputStream.toByteArray();
-//        }
-//
-//        // Close the output stream
-//        outputStream.close();
-//
-//        return compressedImageBytes;
-//    }
-
-
 
 }

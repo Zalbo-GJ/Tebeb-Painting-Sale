@@ -49,6 +49,7 @@ public class Painting {
     private String imageLink;
     private String imageId;
     private String clientId;
+    private String artistName;
     private double width;
     private double height;
     private double price;
