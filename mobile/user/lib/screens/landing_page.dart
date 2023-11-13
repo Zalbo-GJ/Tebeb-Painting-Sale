@@ -4,8 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/get_navigation.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:intl/intl.dart';
+import 'package:shimmer_effect/shimmer_effect.dart';
 
+import '../models/painting.dart';
 import '../routes/app_routes.dart';
+import '../services/api_services.dart';
+import '../utils/colors.dart';
+import '../utils/components.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -14,7 +20,9 @@ class LandingPage extends StatefulWidget {
   State<LandingPage> createState() => _LandingPageState();
 }
 
-class _LandingPageState extends State<LandingPage> {
+class _LandingPageState extends State<LandingPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   TextEditingController _searchController = TextEditingController();
 
   void _clearSearch() {
@@ -29,429 +37,333 @@ class _LandingPageState extends State<LandingPage> {
     super.dispose();
   }
 
+  final GlobalKey<ScaffoldState> _globalkey = GlobalKey<ScaffoldState>();
+  final ApiService _apiService = ApiService();
+  bool _isLoading = true;
+  List<Painting> paintingList = [];
+  void _loadPaintings() async{
+    setState(() {
+      _isLoading = true;
+    });
+    paintingList = [];
+    try {
+      List<Painting>? paintings = await _apiService.getDeliveries();
+      setState(() {
+        paintingList = paintings!;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching paintings: $e');
+    }
+  }
+
+@override
+  void initState() {
+  _tabController = TabController(length: 5, vsync: this);
+    _loadPaintings();
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.amber),
-        title: Container(
-          width: 300,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 240, 238, 238),
-            borderRadius: BorderRadius.circular(50),
-          ),
-          child: Center(
-              child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: _clearSearch,
+      key:_globalkey,
+      body:Padding(
+          padding: const EdgeInsets.only(left: 15.0,right: 15.0,top: 40),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                Container(
+                      width: MediaQuery.of(context).size.width *0.8,
+                      child: TextFormField(
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        controller: _searchController,
+                        keyboardType: TextInputType.text,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.black),
+                        textAlignVertical: TextAlignVertical.center,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: mainBackgroundColor,
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Color.fromARGB(255, 235, 235, 235), width: 2.0),
+                            borderRadius: BorderRadius.circular(30.0),
+                          ),
+                          contentPadding: const EdgeInsets.all(10),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.blue),
+                            borderRadius: BorderRadius.circular(30.0),
+                          ),
+                          border: InputBorder.none,
+                          hintText: 'Search for paintings',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.all(6.0),
+                            child: Container(
+                              width: 10,
+                               height: 10,
+                               decoration: BoxDecoration(borderRadius: BorderRadius.circular(30),border: Border.all(color: Colors.white),color: Color(0xFFD7B894)),
+                                child: Icon(Icons.search,color: Colors.white,size: 18,)),
+                          ),
+                        ),
+                        onChanged: (value) {},
+                        validator: (value) {},
+                      ),
+                    ),
+                SizedBox(width: 10,),
+                GestureDetector(child:
+                  Container(
+                    padding: EdgeInsets.all(7),
+                    width: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Color.fromARGB(255, 123, 123, 123)),
+                        borderRadius: BorderRadius.circular(40)
+                      ),
+                      child: Image.asset('assets/images/filter.png',)),)
+              ],),
+              SizedBox(height: 15,),
+              TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  indicatorPadding: EdgeInsets.only(top: 45),
+                  indicatorColor: const Color.fromARGB(255, 0, 0, 0),
+                  unselectedLabelColor: Colors.grey,
+                  labelColor: Colors.black,
+                labelStyle: const TextStyle(fontSize: 12.0,),  //For Selected tab
+                unselectedLabelStyle: const TextStyle(fontSize: 12.0),
+                  tabs: [
+                    Tab(
+                      child: Container(
+                        child: Column(
+                          children: [
+                            Icon(Icons.whatshot,),
+                            Text("Hottest"),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      child: Container(
+                        child: Column(
+                          children: [
+                            Icon(Icons.brush),
+                            Text("Renaissance"),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      child: Container(
+                        child: Column(
+                          children: [
+                            Icon(Icons.hotel_class_sharp,),
+                            Text("Rococo",),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      child: Container(
+                        child: Column(
+                          children: [
+                            Icon(Icons.favorite),
+                            Text("Romanticism"),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      child: Container(
+                        child: Column(
+                          children: [
+                            Icon(Icons.local_florist_rounded),
+                            Text("Impressionism"),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                hintText: 'search for paintings',
-                border: InputBorder.none),
-          )),
-        ),
-        backgroundColor: Colors.white,
-      ),
-      body: Material(
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: GridView.count(
-            crossAxisSpacing: 50,
-            mainAxisSpacing: 30,
-            crossAxisCount: 2,
-            childAspectRatio: 1,
-            //shrinkWrap: true,
-            //primary: false,
-            padding: const EdgeInsets.all(10),
-            children: <Widget>[
-              Material(
-                elevation: 15,
-                borderRadius: BorderRadiusDirectional.circular(25),
-                //clipBehavior: Clip.antiAliasWithSaveLayer,
-                child: InkWell(
-                  //splashColor: Colors.black,
-                  onTap: () {
-                    Get.toNamed(AppRoutes.paintingDetailsPage);
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Ink.image(
-                        image: const NetworkImage(
-                            'https://th.bing.com/th/id/OIP.oGbkUXOEspTGsgro1fvWYgHaJ6?pid=ImgDet&rs=1'),
-                        height: 150,
-                        width: 100,
-                        fit: BoxFit.cover,
-                        //padding: const EdgeInsets.only(top: 70, left: 20),
+              Divider(thickness: 0.5,),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Container(
+                    width: double.infinity,
+                    height: paintingList.isNotEmpty?(paintingList.length) * (MediaQuery.of(context).size.height*0.54):MediaQuery.of(context).size.height*2,
+                    child: paintingList.isNotEmpty
+                        ? ListView.separated(
+                      itemCount: paintingList.length,
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      separatorBuilder: (context, index) => SizedBox(height: 0), // Adjust the height as needed
+                      itemBuilder: (context, index) {
+                        final item = paintingList[index];
+                        return buildItemCard(context,item);
+                      },
+                    ):Expanded(
+                      child: ListView.builder(
+                        itemCount: 5,
+                        itemBuilder: (ctx, inx) => const PaintingSkeleton(),
                       ),
-                      const SizedBox(
-                        height: 6,
-                      ),
-                      const Text(
-                        'Painting 1 \nBr : 60k',
-                        style: TextStyle(fontSize: 15, color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Material(
-                elevation: 18,
-                borderRadius: BorderRadiusDirectional.circular(25),
-                clipBehavior: Clip.antiAliasWithSaveLayer,
-                child: InkWell(
-                  //splashColor: Colors.black,
-                  onTap: () {
-                    Get.toNamed(AppRoutes.paintingDetailsPage);
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Ink.image(
-                        image: const NetworkImage(
-                            'https://th.bing.com/th/id/OIP.oGbkUXOEspTGsgro1fvWYgHaJ6?pid=ImgDet&rs=1'),
-                        height: 150,
-                        width: 100,
-                        fit: BoxFit.cover,
-                        //padding: const EdgeInsets.only(top: 70, left: 20),
-                      ),
-                      const SizedBox(
-                        height: 6,
-                      ),
-                      const Text(
-                        'Painting 1 \nBr : 60k',
-                        style: TextStyle(fontSize: 15, color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Material(
-                elevation: 18,
-                borderRadius: BorderRadiusDirectional.circular(25),
-                //clipBehavior: Clip.antiAliasWithSaveLayer,
-                child: InkWell(
-                  //splashColor: Colors.black,
-                  onTap: () {
-                    Get.toNamed(AppRoutes.paintingDetailsPage);
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Ink.image(
-                        image: const NetworkImage(
-                            'https://th.bing.com/th/id/OIP.oGbkUXOEspTGsgro1fvWYgHaJ6?pid=ImgDet&rs=1'),
-                        height: 150,
-                        width: 100,
-                        fit: BoxFit.cover,
-                        //padding: const EdgeInsets.only(top: 70, left: 20),
-                      ),
-                      const SizedBox(
-                        height: 6,
-                      ),
-                      const Text(
-                        'Painting 1 \nBr : 60k',
-                        style: TextStyle(fontSize: 15, color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Material(
-                elevation: 18,
-                borderRadius: BorderRadiusDirectional.circular(25),
-                //clipBehavior: Clip.antiAliasWithSaveLayer,
-                child: InkWell(
-                  //splashColor: Colors.black,
-                  onTap: () {
-                    Get.toNamed(AppRoutes.paintingDetailsPage);
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Ink.image(
-                        image: const NetworkImage(
-                            'https://th.bing.com/th/id/OIP.oGbkUXOEspTGsgro1fvWYgHaJ6?pid=ImgDet&rs=1'),
-                        height: 150,
-                        width: 100,
-                        fit: BoxFit.cover,
-                        //padding: const EdgeInsets.only(top: 70, left: 20),
-                      ),
-                      const SizedBox(
-                        height: 6,
-                      ),
-                      const Text(
-                        'Painting 1 \nBr : 60k',
-                        style: TextStyle(fontSize: 15, color: Colors.black),
-                      ),
-                    ],
+                    )
                   ),
                 ),
               ),
             ],
           ),
         ),
-      ),
+    );
+  }
+}
 
+class SkeletonElement extends StatelessWidget {
+  const SkeletonElement({
+    super.key,
+    required this.isMarginForAll,
+    required this.dimensions,
+    required this.colors,
+  });
 
+  final bool isMarginForAll;
+  final Map<String, double> dimensions;
+  final Map<String, Color> colors;
 
-      drawer: Drawer(
-        child: BackdropFilter(
-          blendMode: BlendMode.srcOver,
-          filter: ImageFilter.blur(
-              sigmaX: 13.0, sigmaY: 13.0, tileMode: TileMode.clamp),
-          child: Container(
-            decoration: const BoxDecoration(
-                gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.fromARGB(255, 255, 255, 255),
-                Color.fromARGB(255, 255, 255, 255)
-              ],
-            )),
-            child: ListView(
-              padding: const EdgeInsets.only(top: 20, left: 20),
-              children: [
-                Container(
-                  height: 200,
-                  color: Colors.grey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                          height: 70,
-                          width: 70,
-                          margin: const EdgeInsets.only(
-                              top: 40, left: 10, bottom: 15),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(40),
-                            color: const Color.fromARGB(255, 255, 255, 255),
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                  /*profileController
-                                        .authenticatedUser.value.image ??*/
-                                  "https://th.bing.com/th/id/R.f702feb263901e8b2478090cffdaca57?rik=Dq616ZaLfFwy%2fA&pid=ImgRaw&r=0"),
-                            ),
-                          ),
-                          child: Container()),
-                      Container(
-                        margin: const EdgeInsets.only(left: 5),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              /*profileController
-                                        .authenticatedUser.value.firstName ??
-                                    " " +
-                                        '${profileController.authenticatedUser.value.lastName}' ??*/
-                              "Authenticated user",
-                              style: TextStyle(
-                                  fontSize: 25,
-                                  //color: Color.fromARGB(255, 0, 0, 0),
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              /*profileController
-                                        .authenticatedUser.value.username ??*/
-                              "authenticated user",
-                              style: TextStyle(
-                                fontSize: 15,
-                              ),
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
-                  margin: const EdgeInsets.only(right: 40),
-                  decoration: const BoxDecoration(
-                      color: Colors.amber,
-                      borderRadius: BorderRadius.all(Radius.circular(20))),
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.person,
-                      //color: Colors.black,
-                      size: 25,
-                    ),
-                    title: const Text(
-                      'Profile',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        //color: Colors.white
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Get.toNamed(AppRoutes.profilePage);
-                    },
-                  ),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.message,
-                    size: 25,
-                    //color: Colors.black,
-                  ),
-                  title: const Text(
-                    'Messages',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      //color: Color.fromARGB(255, 0, 0, 0)
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Get.toNamed(AppRoutes.chatPage);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.phone,
-                    size: 25,
-                    //color: Colors.black,
-                  ),
-                  title: const Text(
-                    'Contact us',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    // Get.toNamed(AppRoutes.settingsPage);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.help,
-                    size: 25,
-                    //color: Colors.white,
-                  ),
-                  title: const Text(
-                    'FAQ',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      //color: Colors.white
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    // Get.toNamed(AppRoutes.settingsPage);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.logout,
-                    size: 25,
-                    //color: Colors.white,
-                  ),
-                  title: const Text(
-                    'Logout',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      //color: Colors.white
-                    ),
-                  ),
-                  onTap: () {
-                    // ...
-                  },
-                ),
-                const SizedBox(
-                  height: 40,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    const Text(
-                      "© 2023 TIBEB. All rights reserved",
-                      //style: TextStyle(color: Colors.white),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    InkWell(
-                      child: const Icon(
-                        Icons.settings,
-                        size: 32,
-                      ),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        // Get.toNamed(AppRoutes.settingsPage);
-                      },
-                    ),
-                    const SizedBox(
-                      width: 15,
-                    )
-                  ],
-                ),
-                const SizedBox(
-                  height: 60,
-                )
-              ],
-            ),
-          ),
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerEffect(
+      baseColor: Color(0xFF6eded0).withOpacity(.3),
+      highlightColor: Color(0xFF6eded0),
+      child: Container(
+        margin: isMarginForAll
+            ? EdgeInsets.all(dimensions['margin_all']!)
+            : EdgeInsets.fromLTRB(
+          dimensions['margin_left'] ?? 0,
+          dimensions['margin_top'] ?? 0,
+          dimensions['margin_right'] ?? 0,
+          dimensions['margin_bottom'] ?? 0,
+        ),
+        width: dimensions['width'],
+        height: dimensions['height'],
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(dimensions['radius'] ?? 0),
+          color: Color(0xFF6eded0).withOpacity(.3),
         ),
       ),
+    );
+  }
+}
 
-      bottomNavigationBar: GNav(
-        activeColor: Colors.amber,
-        gap: 8,
-        iconSize: 25,
-        tabBackgroundColor: const Color.fromARGB(255, 241, 241, 241),
-        tabs: [
-          GButton(
-            icon: Icons.home_outlined,
-            text: 'home',
-            onPressed: () {
-              Get.toNamed(AppRoutes.landingPage);
-            },
-          ),
-          GButton(
-            icon: Icons.shopping_cart_outlined,
-            text: 'cart',
-            onPressed: () {
-              Get.toNamed(AppRoutes.cartPage);
-            },
-          ),
-          GButton(
-            icon: Icons.notifications_outlined,
-            text: 'notifications',
-            onPressed: () {
-              Get.toNamed(AppRoutes.paintingDetailsPage);
-            },
-          ),
-          GButton(
-            icon: Icons.person_2_outlined,
-            text: 'profile',
-            onPressed: () {
-              Get.toNamed(AppRoutes.profilePage);
-            },
+class PaintingSkeleton extends StatelessWidget {
+  const PaintingSkeleton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+      height: MediaQuery.of(context).size.height*0.4,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        color: Color(0xffd9d9d9).withAlpha(100),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonElement(
+                isMarginForAll: true,
+                dimensions: {
+                  'width': MediaQuery.of(context).size.width * .8,
+                  'height': MediaQuery.of(context).size.height * .23,
+                  'margin_all': 10,
+                  'radius': 8,
+                },
+                colors: {
+                  'base': shimmerEffectBase2,
+                  'highlight': shimmerEffectHighlight2,
+                },
+              ),
+              const Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SkeletonElement(
+                      isMarginForAll: false,
+                      dimensions: {
+                        'width': 150,
+                        'height': 25,
+                        'radius': 4,
+                        'margin_bottom': 5
+                      },
+                      colors: {
+                        'base': Colors.amber,
+                        'highlight': shimmerEffectHighlight1,
+                      },
+                    ),
+                    SkeletonElement(
+                      isMarginForAll: false,
+                      dimensions: {
+                        'width': 60,
+                        'height': 15,
+                        'radius': 4,
+                        'margin_bottom': 5
+                      },
+                      colors: {
+                        'base': shimmerEffectBase1,
+                        'highlight': shimmerEffectHighlight1,
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 10,),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SkeletonElement(
+                      isMarginForAll: false,
+                      dimensions: const {
+                        'width': 100,
+                        'height': 15,
+                        'radius': 4,
+                        'margin_bottom': 5
+                      },
+                      colors: {
+                        'base': shimmerEffectBase1,
+                        'highlight': shimmerEffectHighlight1,
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 10,),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SkeletonElement(
+                      isMarginForAll: false,
+                      dimensions: {
+                        'width': 100,
+                        'height': 15,
+                        'radius': 4,
+                        'margin_bottom': 5
+                      },
+                      colors: {
+                        'base': shimmerEffectBase1,
+                        'highlight': shimmerEffectHighlight1,
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
