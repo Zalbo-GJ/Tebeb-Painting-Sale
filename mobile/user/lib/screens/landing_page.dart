@@ -1,14 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/get_navigation.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/rendering.dart';
 import 'package:shimmer_effect/shimmer_effect.dart';
 
 import '../models/painting.dart';
-import '../routes/app_routes.dart';
 import '../services/api_services.dart';
 import '../utils/colors.dart';
 import '../utils/components.dart';
@@ -23,7 +19,10 @@ class LandingPage extends StatefulWidget {
 class _LandingPageState extends State<LandingPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+
+  late ScrollController _scrollBottomBarController;
+  bool _show = false;
 
   void _clearSearch() {
     setState(() {
@@ -56,138 +55,166 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
       print('Error fetching paintings: $e');
     }
   }
+  void showBottomBar() {
+    setState(() {
+      _show = true;
+    });
+  }
+  void hideBottomBar() {
+    setState(() {
+      _show = false;
+    });
+  }
+
+  int _currentIndex = 0;
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
 @override
   void initState() {
+  _scrollBottomBarController = ScrollController();
+  _scrollBottomBarController.addListener(() {
+    if (_scrollBottomBarController.position.userScrollDirection ==
+        ScrollDirection.forward){
+      showBottomBar();
+    }
+    else{
+      hideBottomBar();
+    }
+  });
   _tabController = TabController(length: 5, vsync: this);
     _loadPaintings();
     super.initState();
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key:_globalkey,
-      body:Padding(
-          padding: const EdgeInsets.only(left: 15.0,right: 15.0,top: 40),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+    List<Widget> widgetOptions = <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(left: 15.0,right: 15.0,top: 40),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Container(
-                      width: MediaQuery.of(context).size.width *0.8,
-                      child: TextFormField(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        controller: _searchController,
-                        keyboardType: TextInputType.text,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.black),
-                        textAlignVertical: TextAlignVertical.center,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: mainBackgroundColor,
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Color.fromARGB(255, 235, 235, 235), width: 2.0),
-                            borderRadius: BorderRadius.circular(30.0),
-                          ),
-                          contentPadding: const EdgeInsets.all(10),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.blue),
-                            borderRadius: BorderRadius.circular(30.0),
-                          ),
-                          border: InputBorder.none,
-                          hintText: 'Search for paintings',
-                          hintStyle: TextStyle(color: Colors.grey),
-                          suffixIcon: Padding(
-                            padding: const EdgeInsets.all(6.0),
-                            child: Container(
-                              width: 10,
-                               height: 10,
-                               decoration: BoxDecoration(borderRadius: BorderRadius.circular(30),border: Border.all(color: Colors.white),color: Color(0xFFD7B894)),
-                                child: Icon(Icons.search,color: Colors.white,size: 18,)),
-                          ),
-                        ),
-                        onChanged: (value) {},
-                        validator: (value) {},
+                  width: MediaQuery.of(context).size.width *0.8,
+                  child: TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: _searchController,
+                    keyboardType: TextInputType.text,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.black),
+                    textAlignVertical: TextAlignVertical.center,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: mainBackgroundColor,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Color.fromARGB(255, 235, 235, 235), width: 2.0),
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      contentPadding: const EdgeInsets.all(10),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      border: InputBorder.none,
+                      hintText: 'Search for paintings',
+                      hintStyle: TextStyle(color: Colors.grey),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(30),border: Border.all(color: Colors.white),color: Color(0xFFD7B894)),
+                            child: Icon(Icons.search,color: Colors.white,size: 18,)),
                       ),
                     ),
+                    onChanged: (value) {},
+                    validator: (value) {},
+                  ),
+                ),
                 SizedBox(width: 10,),
                 GestureDetector(child:
-                  Container(
+                Container(
                     padding: EdgeInsets.all(7),
                     width: 40,
-                      decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(color: Color.fromARGB(255, 123, 123, 123)),
                         borderRadius: BorderRadius.circular(40)
-                      ),
-                      child: Image.asset('assets/images/filter.png',)),)
+                    ),
+                    child: Image.asset('assets/images/filter.png',)),)
               ],),
-              SizedBox(height: 15,),
-              TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  indicatorPadding: EdgeInsets.only(top: 45),
-                  indicatorColor: const Color.fromARGB(255, 0, 0, 0),
-                  unselectedLabelColor: Colors.grey,
-                  labelColor: Colors.black,
-                labelStyle: const TextStyle(fontSize: 12.0,),  //For Selected tab
-                unselectedLabelStyle: const TextStyle(fontSize: 12.0),
-                  tabs: [
-                    Tab(
-                      child: Container(
-                        child: Column(
-                          children: [
-                            Icon(Icons.whatshot,),
-                            Text("Hottest"),
-                          ],
-                        ),
-                      ),
+            SizedBox(height: 15,),
+            TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              indicatorPadding: EdgeInsets.only(top: 45),
+              indicatorColor: const Color.fromARGB(255, 0, 0, 0),
+              unselectedLabelColor: Colors.grey,
+              labelColor: Colors.black,
+              labelStyle: const TextStyle(fontSize: 12.0,),  //For Selected tab
+              unselectedLabelStyle: const TextStyle(fontSize: 12.0),
+              tabs: [
+                Tab(
+                  child: Container(
+                    child: Column(
+                      children: [
+                        Icon(Icons.whatshot,),
+                        Text("Hottest"),
+                      ],
                     ),
-                    Tab(
-                      child: Container(
-                        child: Column(
-                          children: [
-                            Icon(Icons.brush),
-                            Text("Renaissance"),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Tab(
-                      child: Container(
-                        child: Column(
-                          children: [
-                            Icon(Icons.hotel_class_sharp,),
-                            Text("Rococo",),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Tab(
-                      child: Container(
-                        child: Column(
-                          children: [
-                            Icon(Icons.favorite),
-                            Text("Romanticism"),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Tab(
-                      child: Container(
-                        child: Column(
-                          children: [
-                            Icon(Icons.local_florist_rounded),
-                            Text("Impressionism"),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              Divider(thickness: 0.5,),
-              Expanded(
-                child: SingleChildScrollView(
+                Tab(
+                  child: Container(
+                    child: Column(
+                      children: [
+                        Icon(Icons.brush),
+                        Text("Renaissance"),
+                      ],
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Container(
+                    child: Column(
+                      children: [
+                        Icon(Icons.hotel_class_sharp,),
+                        Text("Rococo",),
+                      ],
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Container(
+                    child: Column(
+                      children: [
+                        Icon(Icons.favorite),
+                        Text("Romanticism"),
+                      ],
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Container(
+                    child: Column(
+                      children: [
+                        Icon(Icons.local_florist_rounded),
+                        Text("Impressionism"),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Divider(thickness: 0.5,),
+            Expanded(
+              child: SingleChildScrollView(
+                  controller: _scrollBottomBarController,
                   child: Container(
                     width: double.infinity,
                     height: paintingList.isNotEmpty?(paintingList.length) * (MediaQuery.of(context).size.height*0.54):MediaQuery.of(context).size.height*2,
@@ -201,18 +228,63 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                         final item = paintingList[index];
                         return buildItemCard(context,item);
                       },
-                    ):Expanded(
-                      child: ListView.builder(
-                        itemCount: 5,
-                        itemBuilder: (ctx, inx) => const PaintingSkeleton(),
-                      ),
-                    )
-                  ),
-                ),
+                    ):ListView.builder(
+                      itemCount: 5,
+                      itemBuilder: (ctx, inx) => const PaintingSkeleton(),
+                    ),
+                  )
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+      Center(child: Text("wish list Page")),
+      Center(child: Text("notification page"),),
+      Center(child: Text("Account page"),)
+    ];
+    return Scaffold(
+      key:_globalkey,
+      body: widgetOptions[_currentIndex],
+      bottomNavigationBar: Container(
+        height: _show?60:0,
+        width: MediaQuery.of(context).size.width,
+        child: _show
+            ?Container(
+          decoration: BoxDecoration(color: Colors.red), // Set the background color
+          child: Theme(
+            data: Theme.of(context).copyWith(
+                canvasColor: Color(0xFFD7B894),),
+            child: BottomNavigationBar(
+              onTap: _onTabTapped,
+              showSelectedLabels: false,
+              showUnselectedLabels: false,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.explore_outlined, color: Colors.black),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.favorite_border, color: Colors.black),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.notification_important_outlined, color: Colors.black),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline, color: Colors.black),
+                  label: '',
+                ),
+              ],
+            ),
+          ),
+        )
+            : Container(
+          height: 1,
+          color: Colors.white,
+          width: MediaQuery.of(context).size.width,
+        ),
+      ),
     );
   }
 }

@@ -7,14 +7,27 @@ Widget buildItemCard( BuildContext context, Painting painting){
   return Container(
     height:MediaQuery.of(context).size.height*0.54,
     child: GestureDetector(child: Column(children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.network(
-          painting.imageLink??"https://magazine.artland.com/wp-content/uploads/2022/07/van-gogh-starry-night-min.jpg",
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: MediaQuery.of(context).size.height * 0.37,
-        ),
+      Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.network(
+              painting.imageLink??"https://magazine.artland.com/wp-content/uploads/2022/07/van-gogh-starry-night-min.jpg",
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.37,
+            ),
+          ),
+          const  Positioned(
+            top: 15,
+            right: 16,
+            child: Icon(
+              Icons.favorite_border,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+        ],
       ),
       SizedBox(height: 10,),
       Padding(

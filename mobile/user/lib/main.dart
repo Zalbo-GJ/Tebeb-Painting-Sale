@@ -5,8 +5,9 @@ import 'package:user/routes/app_routes.dart';
 import 'package:user/screens/splash_screen.dart';
 
 void main() {
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemStatusBarContrastEnforced: true
   ));
   runApp(const MainApp());
 }
