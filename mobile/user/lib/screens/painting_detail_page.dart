@@ -1,5 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/get_navigation.dart';
+import 'package:user/routes/app_routes.dart';
+
+import '../models/painting.dart';
 
 class PaintingDetailPage extends StatefulWidget {
   const PaintingDetailPage({Key? key}) : super(key: key);
@@ -9,7 +14,13 @@ class PaintingDetailPage extends StatefulWidget {
 }
 
 class _PaintingDetailPageState extends State<PaintingDetailPage> {
-  String imageUrl = 'https://uploads4.wikiart.org/images/pablo-picasso/girl-with-mandolin-fanny-tellier-1910.jpg';
+  Painting painting = Get.arguments;
+  @override
+  void initState() {
+    imageUrl = painting.imageLink!;
+    super.initState();
+  }
+  late String imageUrl;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,24 +44,44 @@ class _PaintingDetailPageState extends State<PaintingDetailPage> {
                   Positioned(
                     top: 16,
                     left: 16,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios, // Use the less than ("<") icon
-                        color:Colors.white, // Set the color to black
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ),
-                 const  Positioned(
-                    bottom: 32,
-                    right: 16,
-                    child: Icon(
-                        Icons.favorite_border,
+                    child: Container(
+                      height: 30,
+                      width: 30,
+                      margin: EdgeInsets.only(top: 20),
+                      decoration: BoxDecoration(
                         color: Colors.white,
-                        size: 30,
+                        borderRadius: BorderRadius.circular(30)
                       ),
+                        child: IconButton(
+                          padding: EdgeInsets.only(bottom: 1,left: 7),
+                          icon: const Icon(
+                            Icons.arrow_back_ios, // Use the less than ("<") icon
+                            color:Colors.black, // Set the color to black
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    bottom: 42,
+                    right: 16,
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30)
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.bookmarks_outlined,
+                          color:Colors.black,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ),
                     ),
                 ],
               ),
@@ -152,9 +183,9 @@ class _PaintingDetailPageState extends State<PaintingDetailPage> {
                                         key: UniqueKey(),
                                         width: MediaQuery.of(context).size.width*0.4,
                                         height: 80,
-                                        child: GestureDetector(
+                                        child: InkWell(
                                           onTap: (){
-                                            print("hello");
+                                            Get.toNamed(AppRoutes.clientProfilePage);
                                           },
                                           child: Container(
                                             decoration: BoxDecoration(

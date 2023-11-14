@@ -13,6 +13,8 @@ dependencies:
   page_transition: ^2.0.9
   flutter_secure_storage:
   get: ^4.6.5
+  shimmer_effect: ^1.0.4
+  intl:
   dio:
   another_flushbar:
   flutter:
@@ -33,3 +35,5 @@ flutter:
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
   uses-material-design: true
+  assets:
+    - assets/images/
