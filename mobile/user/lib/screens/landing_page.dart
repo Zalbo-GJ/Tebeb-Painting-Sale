@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:shimmer_effect/shimmer_effect.dart';
+import 'package:user/screens/profile_page.dart';
 
 import '../models/painting.dart';
 import '../services/api_services.dart';
@@ -55,6 +56,28 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
       print('Error fetching paintings: $e');
     }
   }
+  void _searchPaintings() async{
+    setState(() {
+      _isLoading = true;
+    });
+    paintingList = [];
+    try {
+      if(_searchController.text == ''){
+        List<Painting>? paintings = await _apiService.searchDelivery(" ");
+        setState(() {
+          paintingList = paintings!;
+          _isLoading = false;
+        });
+      }
+      List<Painting>? paintings = await _apiService.searchDelivery(_searchController.text);
+      setState(() {
+        paintingList = paintings!;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching paintings: $e');
+    }
+  }
   void showBottomBar() {
     setState(() {
       _show = true;
@@ -90,6 +113,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
     _loadPaintings();
     super.initState();
   }
+  
   @override
   Widget build(BuildContext context) {
     List<Widget> widgetOptions = <Widget>[
@@ -105,6 +129,9 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                   child: TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: _searchController,
+                    onFieldSubmitted: (String value){
+                      _searchPaintings();
+                    },
                     keyboardType: TextInputType.text,
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.black),
                     textAlignVertical: TextAlignVertical.center,
@@ -129,7 +156,9 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                             width: 10,
                             height: 10,
                             decoration: BoxDecoration(borderRadius: BorderRadius.circular(30),border: Border.all(color: Colors.white),color: Color(0xFFD7B894)),
-                            child: Icon(Icons.search,color: Colors.white,size: 18,)),
+                            child: IconButton(icon:Icon(Icons.search,size: 18,),color: Colors.white, onPressed: () {
+                              _searchPaintings();
+    },)),
                       ),
                     ),
                     onChanged: (value) {},
@@ -240,7 +269,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
       ),
       Center(child: Text("wish list Page")),
       Center(child: Text("notification page"),),
-      Center(child: Text("Account page"),)
+      ProfilePage(),
     ];
     return Scaffold(
       key:_globalkey,

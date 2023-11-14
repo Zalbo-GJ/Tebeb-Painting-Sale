@@ -1,12 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/get_navigation.dart';
+import 'package:user/routes/app_routes.dart';
 
 import '../models/painting.dart';
 
 Widget buildItemCard( BuildContext context, Painting painting){
   return Container(
     height:MediaQuery.of(context).size.height*0.54,
-    child: GestureDetector(child: Column(children: [
+    child: GestureDetector(
+      onTap: (){
+        Get.toNamed(AppRoutes.paintingDetailsPage,arguments: painting);
+      },
+      child: Column(children: [
       Stack(
         children: [
           ClipRRect(
