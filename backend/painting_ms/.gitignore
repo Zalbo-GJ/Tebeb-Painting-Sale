@@ -36,4 +36,4 @@ build/
 .src/main/resources/application.properties
 
 ## deployment script ##
-.painting_deployment.sh
+.painting_deployment
