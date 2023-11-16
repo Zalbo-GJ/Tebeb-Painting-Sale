@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import io.imagekit.sdk.exceptions.*;
 import io.imagekit.sdk.models.FileCreateRequest;
@@ -98,9 +99,20 @@ public class PaintingService {
 
     //GET all paintings
     public List<Painting> getAllPaintings() {
+        return paintingRepository.findAll();
+    }
+
+    //GET all paintings trial
+    public List<Painting> getAllPaintingsTrial(String userId) {
         List<Painting> paintingList = paintingRepository.findAll();
+
         if (paintingList.isEmpty())
             return null;
+
+        for (Painting painting : paintingList){
+            if (painting.listOfIdThatLikedThePainting.contains(userId))
+                painting.isLikedByUser();
+        }
         return paintingList;
     }
 
@@ -112,7 +124,8 @@ public class PaintingService {
     //search by partial name of the title
     public List<Painting> getPaintingByName(String partialString) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("name").regex(".*" + partialString + ".*"));
+        Pattern pattern = Pattern.compile(".*" + partialString + ".*", Pattern.CASE_INSENSITIVE);
+        query.addCriteria(Criteria.where("name").regex(pattern));
         return mongoTemplate.find(query, Painting.class);
     }
 
@@ -224,7 +237,7 @@ public class PaintingService {
     }
 
     //add a like
-    public String likeAdd(String id) {
+    public String likeAdd(String id, String userId) {
 
         //Check if the painting exists
         Optional<Painting> optionalPainting = paintingRepository.findById(id);
@@ -235,6 +248,11 @@ public class PaintingService {
         Painting painting = optionalPainting.get();
         painting.setLikes((painting.getLikes()) + 1);
 
+        if (painting.listOfIdThatLikedThePainting.contains(userId))
+            return "already liked";
+
+        painting.listOfIdThatLikedThePainting.add(userId);
+
         //delete old painting
         paintingRepository.deleteById(id);
 
@@ -244,7 +262,7 @@ public class PaintingService {
     }
 
     //subtract a like
-    public String likeSubtract(String id) {
+    public String likeSubtract(String id, String userId) {
 
         //Check if the painting exists
         Optional<Painting> optionalPainting = paintingRepository.findById(id);
@@ -258,6 +276,11 @@ public class PaintingService {
             return "zero";
 
         painting.setLikes((painting.getLikes()) - 1);
+
+        if (!painting.listOfIdThatLikedThePainting.contains(userId))
+            return "not liked";
+
+        painting.listOfIdThatLikedThePainting.remove(userId);
 
         //delete old painting
         paintingRepository.deleteById(id);

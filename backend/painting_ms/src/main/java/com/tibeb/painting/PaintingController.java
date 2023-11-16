@@ -71,6 +71,12 @@ public class PaintingController {
         return new ResponseEntity<>(paintingService.getAllPaintings(), HttpStatus.OK) ;
     }
 
+    //GET all paintings trial
+    @GetMapping("/trial")
+    public ResponseEntity<List<Painting>> getAllPaintingsTrial(String userId) {
+        return new ResponseEntity<>(paintingService.getAllPaintings(), HttpStatus.OK) ;
+    }
+
     //GET painting by ID
     @GetMapping("/id/{id}")
     public ResponseEntity<Optional<Painting>> getPaintingById(@PathVariable String id) {
@@ -177,39 +183,49 @@ public class PaintingController {
     }
 
     //add a like
-    @PutMapping("/like/add/{id}")
-    public ResponseEntity<Map<String, Object>> likeAdd(@PathVariable String id) {
+    @PutMapping("/like/add/{id}/{userId}")
+    public ResponseEntity<Map<String, Object>> likeAdd(@PathVariable String id, @PathVariable String userId) {
         Map<String, Object> response = new HashMap<>();
 
-        String status = paintingService.likeAdd(id);
+        String status = paintingService.likeAdd(id, userId);
 
         if (Objects.equals(status, "not found")){
             response.put("message","Painting not found!");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 
-        } else{
+        } else if (Objects.equals(status, "already liked")){
+            response.put("message","The painting is already liked by this user! you are bad at coding!!");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+
+        }
+        else{
             response.put("message","Updated successfully!");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
 
     }
 
-    //add a like
-    @PutMapping("/like/sub/{id}")
-    public ResponseEntity<Map<String, Object>> likeSubtract(@PathVariable String id) {
+    //sub a like
+    @PutMapping("/like/sub/{id}/{userId}")
+    public ResponseEntity<Map<String, Object>> likeSubtract(@PathVariable String id, @PathVariable String userId) {
         Map<String, Object> response = new HashMap<>();
 
-        String status = paintingService.likeSubtract(id);
+        String status = paintingService.likeSubtract(id, userId);
 
         if (Objects.equals(status, "not found")){
             response.put("message","Painting not found!");
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } else if (Objects.equals(status, "zero")) {
-            response.put("message","the dude already has zero likes, can't be negative!");
+            response.put("message","the painting already has zero likes, can't be negative!");
             return new ResponseEntity<>(response, HttpStatus.OK);
 
-        } else{
+        } else if (Objects.equals(status, "not liked")) {
+            response.put("message","the user didn't like the painting in the first place! you are a shitty coder!!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        }
+        else{
             response.put("message","Updated successfully!");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }

@@ -12,6 +12,8 @@ import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -59,4 +61,7 @@ public class Painting {
     private LocalDateTime dateAdded;
     private String description;
     private int likes;
+    List<String> listOfIdThatLikedThePainting = new ArrayList<>();
+    //for frontpage
+    private boolean likedByUser;
 }

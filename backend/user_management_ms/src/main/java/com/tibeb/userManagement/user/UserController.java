@@ -161,16 +161,16 @@ public class UserController {
                 response.put("message", "name");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
+            case "username" -> {
+                response.put("message", "username exists");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
             case "email" -> {
                 response.put("message", "email");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "phone" -> {
                 response.put("message", "phone number exists");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "username" -> {
-                response.put("message", "username exists");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "phoneCheck" -> {

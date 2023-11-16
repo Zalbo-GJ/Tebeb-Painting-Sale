@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Ignore application.properties file ###
+.src/main/resources/application.properties
+
+## deployment script ##
+.painting_deployment.sh
