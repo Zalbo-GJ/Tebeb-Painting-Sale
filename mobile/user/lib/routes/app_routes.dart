@@ -6,7 +6,7 @@ import '../screens/cart_page.dart';
 import '../screens/chat_page.dart';
 import '../screens/landing_page.dart';
 import '../screens/painting_detail_page.dart';
-import '../screens/profile_page.dart';
+import '../screens/edit_profile_page.dart';
 import '../screens/splash_screen.dart';
 
 
@@ -26,7 +26,7 @@ class AppRoutes {
     GetPage(name: landingPage, page: () => const LandingPage()),
     GetPage(name: paintingDetailsPage, page: () => const PaintingDetailPage()),
     GetPage(name: clientProfilePage, page: () => const ClientProfile()),
-    GetPage(name: profilePage, page: () => const ProfilePage()),
+    GetPage(name: profilePage, page: () => const EditProfilePage()),
     GetPage(name: cartPage, page: () => const CartPage()),
     GetPage(name: chatPage, page: () => const ChatPage()),
   ];

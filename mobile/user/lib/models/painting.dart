@@ -14,6 +14,7 @@ class Painting {
   DateTime? dateAdded;
   String? description;
   int? likes;
+  bool? isLikedByUser;
 
   Painting({
     this.id,
@@ -29,6 +30,7 @@ class Painting {
     this.dateAdded,
     this.description,
     this.likes,
+    this.isLikedByUser
   });
 
   factory Painting.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,7 @@ class Painting {
       dateAdded: json['dateAdded'] != null ? DateTime.parse(json['dateAdded']) : null,
       description: json['description'],
       likes: json['likes'],
+      isLikedByUser: json['likedByUser']
     );
   }
 
