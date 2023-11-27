@@ -1,68 +1,62 @@
 package com.tibeb.painting;
 
 import io.imagekit.sdk.exceptions.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @RestController
 @RequestMapping("/api/paint")
+@CrossOrigin(origins = "*")
 public class PaintingController {
 
     @Autowired
     private PaintingService paintingService;
 
-    //UPLOAD image of painting
+    // UPLOAD image of painting
+    
     @PutMapping("/image/{id}")
     public ResponseEntity<Map<String, Object>> addImage(@RequestParam("image") MultipartFile image, @PathVariable String id) throws IOException, ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
         Map<String, Object> response = new HashMap<>();
-        String r =paintingService.addImage(id, image);
+        String r = paintingService.addImage(id, image);
 
         switch (r) {
-            case "not found" -> {
-                response.put("message", "painting not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-            case "painting" -> {
-                response.put("message", "failed to upload!");
+            case "not found":
+                response.put("message", "Painting not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            case "painting":
+                response.put("message", "Failed to upload");
                 return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-            case "added" -> {
-                response.put("message", "uploaded successfully");
+            case "added":
+                response.put("message", "Uploaded successfully");
                 return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "file size" -> {
+            case "file size":
                 response.put("message", "File size too big - must be below 1Mb");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            default -> {
-                response.put("message", "unknown error");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            default:
+                response.put("message", "Unknown error");
                 return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-            }
         }
     }
 
-    //POST new painting
+    // POST new painting
     @PostMapping
     public ResponseEntity<String> addPainting(@RequestBody Painting painting) throws IOException {
-
         String response = paintingService.addPainting(painting);
 
         if (response.equals("name")) {
-            return new ResponseEntity<>("Title already exists", HttpStatus.OK);
-        }  else
-            return new ResponseEntity<>("Painting added", HttpStatus.OK);
+            return new ResponseEntity<>("Title already exists", HttpStatus.CONFLICT);
+        } else {
+            return new ResponseEntity<>("Painting added", HttpStatus.CREATED);
+        }
     }
 
     //GET all paintings
@@ -71,45 +65,77 @@ public class PaintingController {
         return new ResponseEntity<>(paintingService.getAllPaintings(), HttpStatus.OK) ;
     }
 
-    //GET all paintings trial
-    @GetMapping("/trial")
-    public ResponseEntity<List<Painting>> getAllPaintingsTrial(String userId) {
-        return new ResponseEntity<>(paintingService.getAllPaintings(), HttpStatus.OK) ;
+    //GET all paintings with likes
+    @GetMapping("/get/{userId}")
+    public ResponseEntity<List<Painting>> getAllPaintingsWithLikes(@PathVariable String userId) {
+        return new ResponseEntity<>(paintingService.getAllPaintingsWithLikes(userId), HttpStatus.OK) ;
+    }
+
+    //GET all paintings with likes
+    @GetMapping("/liked-paintings/{userId}")
+    public ResponseEntity<List<Painting>> getPaintingsWithLikesOnly(@PathVariable String userId) {
+        return new ResponseEntity<>(paintingService.getPaintingsWithLikesOnly(userId), HttpStatus.OK) ;
     }
 
     //GET painting by ID
-    @GetMapping("/id/{id}")
-    public ResponseEntity<Optional<Painting>> getPaintingById(@PathVariable String id) {
-        Optional<Painting> result = paintingService.getPaintingById(id);
-        if (result.isEmpty())
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        return new ResponseEntity<>(result, HttpStatus.OK) ;
+    @GetMapping("/id/{id}/{userId}")
+    public ResponseEntity<?> getPaintingById(@PathVariable String id, @PathVariable String userId) {
+        Optional<Painting> result = paintingService.getPaintingById(id, userId);
+        if (result.isEmpty()) {
+            return new ResponseEntity<>("Painting not found", HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(result.get(), HttpStatus.OK);
     }
 
+    //GET by price
+    @GetMapping("/price/{userId}")
+    public ResponseEntity<List<Painting>> getPaintingsByPrice(
+            @RequestParam(required = false, defaultValue = "0") double min,
+            @RequestParam(required = false, defaultValue = "0") double max,
+            @PathVariable String userId
+    ) {
+        List<Painting> paintings = paintingService.getPaintingByPrice(min, max, userId);
+
+        if (paintings.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(paintings);
+        }
+    }
+
+//    //GET by seller rating
+//    @GetMapping("/bySellerRating/{rating}")
+//    public ResponseEntity<List<Painting>> getPaintingsBySellerRating(@PathVariable double rating) {
+//        Optional<List<Painting>> paintings = paintingService.getPaintingBySellerRating(rating);
+//
+//        return paintings.map(paintingList -> new ResponseEntity<>(paintingList, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NO_CONTENT));
+//    }
+
     //GET painting by name
-    @GetMapping("/name/{name}")
-    public ResponseEntity<List<Painting>> getPaintingByName(@PathVariable String name) {
-        List<Painting> result = paintingService.getPaintingByName(name);
-        if (result.isEmpty())
-            return new ResponseEntity<>(result, HttpStatus.OK);
+    @GetMapping("/name/{name}/{userId}")
+    public ResponseEntity<List<Painting>> getPaintingByName(@PathVariable String name, @PathVariable String userId) {
+        List<Painting> result = paintingService.getPaintingByName(name, userId);
+        if (result == null)
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
     //GET painting by clientId
-    @GetMapping("/clientId/{clientId}")
-    public ResponseEntity<List<Painting>> getPaintingByClientId(@PathVariable String clientId) {
-        List<Painting> result = paintingService.getPaintingByClientId(clientId);
+    @GetMapping("/clientId/{clientId}/{userId}")
+    public ResponseEntity<List<Painting>> getPaintingByClientId(@PathVariable String clientId, @PathVariable String userId) {
+        List<Painting> result = paintingService.getPaintingByClientId(clientId, userId);
         if (result.isEmpty())
             return new ResponseEntity<>(result, HttpStatus.OK);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
     //GET painting by genre
-    @GetMapping("/genre/{genre}")
-    public ResponseEntity<List<Painting>> getPaintingByGenre(@PathVariable String genre) {
-        List<Painting> result = paintingService.getPaintingByGenre(genre);
-        if (result.isEmpty())
-            return new ResponseEntity<>(result, HttpStatus.OK);
+    @GetMapping("/genre/{genre}/{userId}")
+    public ResponseEntity<List<Painting>> getPaintingByGenre(@PathVariable String genre, @PathVariable String userId) {
+        List<Painting> result = paintingService.getPaintingByGenre(genre, userId);
+        if (result == null)
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
     }
 
@@ -164,22 +190,21 @@ public class PaintingController {
 
     }
 
-    //DELETE painting by id
+    // DELETE painting by id
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deletePainting(@PathVariable String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
         String status = paintingService.deletePainting(id);
+
         switch (status) {
-            case "not found" -> {
-                return new ResponseEntity<>("Painting not found!", HttpStatus.OK);
-            }
-            case "deleted" -> {
-                return new ResponseEntity<>("Painting deleted!", HttpStatus.OK);
-            }
-            case "empty" -> {
-                return new ResponseEntity<>("painting deleted - profile picture not found!", HttpStatus.OK);
-            }
+            case "not found":
+                return new ResponseEntity<>("Painting not found", HttpStatus.NOT_FOUND);
+            case "deleted":
+                return new ResponseEntity<>("Painting deleted", HttpStatus.OK);
+            case "empty":
+                return new ResponseEntity<>("Painting deleted - profile picture not found", HttpStatus.OK);
+            default:
+                return new ResponseEntity<>("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>("Unknown error!", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     //add a like

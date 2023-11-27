@@ -22,6 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/clients")
+@CrossOrigin(origins = "*")
 public class ClientController {
 
     @Autowired
@@ -377,14 +378,21 @@ public class ClientController {
         return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
-    //DELETE client
+    // DELETE client by id
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteClient(@PathVariable String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
-        int status = clientService.deleteClient(id);
-        if (status == 0)
-            return new ResponseEntity<>(HttpStatus.OK);
-        else
-            return new ResponseEntity<>("Deleted",HttpStatus.OK);
+        String status = clientService.deleteClient(id);
+
+        switch (status) {
+            case "not found":
+                return new ResponseEntity<>("client not found", HttpStatus.NOT_FOUND);
+            case "deleted":
+                return new ResponseEntity<>("client deleted", HttpStatus.OK);
+            case "empty":
+                return new ResponseEntity<>("client deleted - profile picture not found", HttpStatus.OK);
+            default:
+                return new ResponseEntity<>("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     //Rating

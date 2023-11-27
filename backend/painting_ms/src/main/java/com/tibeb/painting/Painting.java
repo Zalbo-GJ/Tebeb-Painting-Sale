@@ -55,8 +55,8 @@ public class Painting {
     private double width;
     private double height;
     private double price;
-    private Genre genre;
-    private Type type;
+    private String genre;
+    private String type;
     private boolean sold;
     private LocalDateTime dateAdded;
     private String description;

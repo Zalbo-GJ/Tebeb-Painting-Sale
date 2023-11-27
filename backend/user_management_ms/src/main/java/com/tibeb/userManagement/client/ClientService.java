@@ -2,7 +2,6 @@ package com.tibeb.userManagement.client;
 
 import com.tibeb.userManagement.LoginForm;
 import com.tibeb.userManagement.PaintingInfo;
-import com.tibeb.userManagement.user.User;
 import io.imagekit.sdk.ImageKit;
 import io.imagekit.sdk.config.Configuration;
 import io.imagekit.sdk.exceptions.*;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -184,14 +182,11 @@ public class ClientService {
 
         // Check the country code
         String countryCode = phoneNumber.substring(1, 4);
-        if (!countryCode.equals("251")) {
-            return false;
-        }
+        return countryCode.equals("251");
 
         // Additional checks can be added here if needed
 
         // If all checks pass, the phone number is valid
-        return true;
     }
 
     //Email checker method
@@ -450,7 +445,7 @@ public class ClientService {
     }
 
     //DELETE client
-    public int deleteClient(String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
+    public String deleteClient(String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
 
         Optional<Client> optionalClient = clientRepository.findById(id);
         if(optionalClient.isPresent()){
@@ -459,16 +454,41 @@ public class ClientService {
             Configuration config = new Configuration(publicKey, privateKey, urlEndpoint);
             imageKit.setConfig(config);
 
-            //DELETE image from db - both profile picture and background picture
-            imageKit.deleteFile(optionalClient.get().getProfileImageId());
-            imageKit.deleteFile(optionalClient.get().getBackgroundImageId());
+            //DELETE profile image from db
+            try{
+                imageKit.deleteFile(optionalClient.get().getProfileImageId());
+            } catch (BadRequestException e) {
 
-            //DELETE the painting from db
+                //DELETE image from db
+                try{
+                    imageKit.deleteFile(optionalClient.get().getBackgroundImageId());
+                } catch (BadRequestException f) {
+                    //DELETE the client from db
+                    clientRepository.deleteById(id);
+                    return "empty";
+                }
+                //DELETE the client from db
+                clientRepository.deleteById(id);
+                return "empty";
+            }
+
+            //DELETE image from db
+            try{
+                imageKit.deleteFile(optionalClient.get().getBackgroundImageId());
+            } catch (BadRequestException e) {
+
+                //DELETE the client from db
+                clientRepository.deleteById(id);
+                return "empty";
+            }
+
+            //DELETE the client from db
             clientRepository.deleteById(id);
+            return "deleted";
 
-            return 1;
+
         }else {
-            return 0;
+            return "not found";
         }
     }
 

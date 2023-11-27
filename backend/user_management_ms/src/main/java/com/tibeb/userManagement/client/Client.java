@@ -22,11 +22,6 @@ public class Client {
         USER,
         CLIENT
     }
-    public enum Region {
-        ADDIS_ABABA,
-        DIREDAWA,
-        DESSIE
-    }
     @Id
     private String id;
     private String firstName;
@@ -35,7 +30,7 @@ public class Client {
     private String phoneNumber;
     private String email;
     private String password;
-    private Region region;
+    private String region;
     private Role role;
     private int followers;
     private double rating;
