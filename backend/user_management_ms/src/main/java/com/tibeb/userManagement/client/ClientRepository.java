@@ -1,6 +1,5 @@
 package com.tibeb.userManagement.client;
 
-import com.tibeb.userManagement.user.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;

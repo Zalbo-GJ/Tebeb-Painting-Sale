@@ -1,4 +1,4 @@
-package com.tibeb.userManagement;
+package com.tibeb.userManagement.user.model;
 import lombok.*;
 
 import java.util.List;

@@ -1,5 +1,6 @@
-package com.tibeb.userManagement.user;
+package com.tibeb.userManagement.user.model;
 
+import com.mongodb.lang.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,17 +25,33 @@ public class User {
     }
     @Id
     private String id;
+    @Nullable
     private String firstName;
+    @Nullable
     private String lastName;
+    @Nullable
     private String userName;
+    @Nullable
     private String phoneNumber;
     private String email;
     private String password;
+    @Nullable
     private Role role;
+    @Nullable
     private String profilePictureLink;
+    @Nullable
     private String profileImageId;
+    @Nullable
     private List<String> savedPaintingIdList = new ArrayList<>();
+    @Nullable
     private List<String> boughtPaintingIdList = new ArrayList<>();
+    @Nullable
     private List<String> likedPaintingIdList = new ArrayList<>();
+    @Nullable
     private List<String> followingPaintersList = new ArrayList<>();
+
+    public User(String email, String password) {
+        this.email = email;
+        this.password = password;
+    }
 }

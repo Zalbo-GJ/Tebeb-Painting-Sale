@@ -1,9 +1,12 @@
 package com.tibeb.userManagement.user;
 
-import com.tibeb.userManagement.LoginForm;
-import com.tibeb.userManagement.PaintingInfo;
+import com.tibeb.userManagement.user.model.LoginForm;
+import com.tibeb.userManagement.user.model.PaintingInfo;
+import com.tibeb.userManagement.user.model.RegisterForm;
 import com.tibeb.userManagement.client.Client;
 import com.tibeb.userManagement.client.ClientController;
+import com.tibeb.userManagement.user.auth.JwtUtil;
+import com.tibeb.userManagement.user.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -13,6 +16,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -24,13 +28,11 @@ import io.imagekit.sdk.models.FileCreateRequest;
 import io.imagekit.sdk.models.results.Result;
 import io.imagekit.sdk.ImageKit;
 import io.imagekit.sdk.config.Configuration;
-import io.imagekit.sdk.utils.Utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 @Service
 public class UserService {
@@ -41,6 +43,10 @@ public class UserService {
     private RestTemplate restTemplate;
     @Autowired
     private ClientController clientController;
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Value("${app.secretKey}")
     private String SECRET_KEY;
@@ -107,7 +113,12 @@ public class UserService {
     }
 
     //CREATE user
-    public String createUser(User user) {
+    public String createUser(RegisterForm registerForm) {
+
+        User user = new User();
+        user.setEmail(registerForm.getEmail());
+        user.setPassword(registerForm.getPassword());
+
 
         //attributed that cannot be set by the user
         user.setId(null);
@@ -119,22 +130,6 @@ public class UserService {
         user.setLikedPaintingIdList(null);
         user.setFollowingPaintersList(null);
 
-        //editing the attributes
-        user.setFirstName(user.getFirstName().toLowerCase());
-        user.setLastName(user.getLastName().toLowerCase());
-        user.setUserName(user.getUserName().toLowerCase());
-        user.setEmail(user.getEmail().toLowerCase());
-
-//        //checks if phone is valid using a method
-//        boolean phone = isValidPhoneNumber(user.getPhoneNumber());
-//        if (!phone)
-//            return "phoneCheck";
-
-//        //checks if email is valid using a method
-//        boolean emailCheck = isValidEmail(user.getEmail());
-//        if (!emailCheck)
-//            return "emailCheck";
-
         if (userRepository.findByEmail(user.getEmail()).isPresent())
             return "email";
 
@@ -143,12 +138,18 @@ public class UserService {
 
         if (userRepository.findByUserName(user.getUserName()).isPresent())
             return "username";
-        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+
+        // Hash the password before storing it
+        String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
 
         //save the new painting
         userRepository.save(user);
-        return "added";
+
+        // Generate JWT Token for the newly registered user
+        String token = jwtUtil.createToken(user);
+
+        return "created";
     }
 
 //    //Phone number checker method

@@ -4,11 +4,20 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.tibeb.userManagement.LoginForm;
+import com.tibeb.userManagement.user.model.RegisterForm;
+import com.tibeb.userManagement.loginform.ErrorRes;
+import com.tibeb.userManagement.loginform.LoginReq;
+import com.tibeb.userManagement.loginform.LoginRes;
+import com.tibeb.userManagement.user.auth.JwtUtil;
+import com.tibeb.userManagement.user.model.User;
 import io.imagekit.sdk.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,26 +36,35 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    //Login
-    @PostMapping(value = "/login")
-    public ResponseEntity<?> login(@RequestBody LoginForm loginForm) {
-        Map<String, Object> response = new HashMap<>();
-        switch (userService.login(loginForm)) {
-            case "user" -> {
-                response.put("message", "user not found");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-            case "password" -> {
-                response.put("message", "password incorrect");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-        }
-        String token = userService.login(loginForm);
-        User user = userService.getUserByEmail(loginForm.getEmail());
-        user.setPassword("null");
-        return new ResponseEntity<>(user, HttpStatus.OK);
-    }
+    @Autowired
+    private UserDetailsService userDetailsService;
+    @Autowired
+    private AuthenticationManager authenticationManager;
+    @Autowired
+    private JwtUtil jwtUtil;
 
+    @ResponseBody
+    @GetMapping("/login")
+    public ResponseEntity login(@RequestBody LoginReq loginReq)  {
+
+        try {
+            Authentication authentication =
+                    authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getEmail(), loginReq.getPassword()));
+            String email = authentication.getName();
+            User user = new User(email,"");
+            String token = jwtUtil.createToken(user);
+            LoginRes loginRes = new LoginRes(email,token);
+
+            return ResponseEntity.ok(loginRes);
+
+        }catch (BadCredentialsException e){
+            ErrorRes errorResponse = new ErrorRes(HttpStatus.BAD_REQUEST,"Invalid username or password");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }catch (Exception e){
+            ErrorRes errorResponse = new ErrorRes(HttpStatus.BAD_REQUEST, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
     //GOOGLE signup
     @PostMapping(value = "/register/{id_token}")
     public ResponseEntity<Map<String, Object>> register(@PathVariable String name, @PathVariable String id_token) {
@@ -78,13 +96,12 @@ public class UserController {
             response.put("message", "user found");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-        User user1 = null;
+        RegisterForm user1 = null;
         user1.setEmail(email);
-        user1.setRole(User.Role.USER);
+        user1.setPassword("");
         userService.createUser(user1);
 
         response.put("email", email);
-        response.put("role", user.getRole());
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -151,42 +168,34 @@ public class UserController {
     }
 
     //CREATE user
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createUser(@RequestBody User user) {
+    @GetMapping("/register")
+    public ResponseEntity<Map<String, Object>> createUser(@RequestBody RegisterForm registerForm) {
         Map<String, Object> response = new HashMap<>();
 
-        String status = userService.createUser(user);
+        String status = userService.createUser(registerForm);
         switch (status) {
             case "name" -> {
                 response.put("message", "name");
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
             case "username" -> {
                 response.put("message", "username exists");
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             case "email" -> {
                 response.put("message", "email");
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             case "phone" -> {
                 response.put("message", "phone number exists");
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            case "phoneCheck" -> {
-                response.put("message", "invalid phone number : rewrite as +251xxxxxxxxx");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "emailCheck" -> {
-                response.put("message", "invalid email");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "added" -> {
-                response.put("message", "created");
+            case "created" -> {
+                response.put("message", registerForm.getEmail()+" created!");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
-        response.put("message", "Unknown error, BUG");
+        response.put("message", "unknown error!");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
