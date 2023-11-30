@@ -1,5 +1,6 @@
-package com.tibeb.userManagement.user.auth;
+package com.tibeb.userManagement.auth;
 
+import com.tibeb.userManagement.client.Client;
 import com.tibeb.userManagement.user.model.User;
 import io.jsonwebtoken.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,8 +29,23 @@ public class JwtUtil {
 
     public String createToken(User user) {
         Claims claims = Jwts.claims().setSubject(user.getEmail());
+        claims.put("id", user.getId());
         claims.put("firstName",user.getFirstName());
         claims.put("lastName",user.getLastName());
+        Date tokenCreateTime = new Date();
+        Date tokenValidity = new Date(tokenCreateTime.getTime() + TimeUnit.MINUTES.toMillis(accessTokenValidity));
+        return Jwts.builder()
+                .setClaims(claims)
+                .setExpiration(tokenValidity)
+                .signWith(SignatureAlgorithm.HS256, secret_key)
+                .compact();
+    }
+
+    public String createToken(Client client) {
+        Claims claims = Jwts.claims().setSubject(client.getEmail());
+        claims.put("id", client.getId());
+        claims.put("firstName",client.getFirstName());
+        claims.put("lastName",client.getLastName());
         Date tokenCreateTime = new Date();
         Date tokenValidity = new Date(tokenCreateTime.getTime() + TimeUnit.MINUTES.toMillis(accessTokenValidity));
         return Jwts.builder()
@@ -74,6 +90,11 @@ public class JwtUtil {
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    public String getUserId(String token) {
+        Claims claims = this.parseJwtClaims(token);
+        return claims.get("id", String.class);
     }
 
     public String getEmail(Claims claims) {

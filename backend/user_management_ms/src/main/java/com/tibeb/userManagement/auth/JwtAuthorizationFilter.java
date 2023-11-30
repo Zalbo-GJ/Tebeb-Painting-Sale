@@ -1,4 +1,4 @@
-package com.tibeb.userManagement.user.auth;
+package com.tibeb.userManagement.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;

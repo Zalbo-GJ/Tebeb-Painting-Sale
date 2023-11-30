@@ -4,11 +4,22 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.tibeb.userManagement.user.model.LoginForm;
+import com.tibeb.userManagement.auth.JwtUtil;
+import com.tibeb.userManagement.loginform.ErrorRes;
+import com.tibeb.userManagement.loginform.LoginReq;
+import com.tibeb.userManagement.loginform.LoginRes;
+import com.tibeb.userManagement.loginform.RegisterForm;
+import com.tibeb.userManagement.user.CustomUserDetailsService;
+import com.tibeb.userManagement.user.model.User;
 import io.imagekit.sdk.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,28 +36,43 @@ public class ClientController {
 
     @Autowired
     private ClientService clientService;
+    @Autowired
+    @Qualifier("customClientAuthenticationManager")
+    private AuthenticationManager authenticationManager;
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
+    @Autowired
+    private JwtUtil jwtUtil;
 
-    //Login
-    @PostMapping(value = "/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginForm loginForm){
-        Map<String, Object> response = new HashMap<>();
-        switch (clientService.login(loginForm)) {
-            case "user" -> {
-                response.put("message", "user not found");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "password" -> {
-                response.put("message", "password incorrect");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
+    @ResponseBody
+    @GetMapping("/login")
+    public ResponseEntity login(@RequestBody LoginReq loginReq)  {
+
+        try {
+            Authentication authentication =
+                    authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getEmail(), loginReq.getPassword()));
+            String email = authentication.getName();
+
+            // get the user to extract the id
+            Client client1 = clientService.getClientByEmail(email);
+
+            Client client = new Client(email,"",client1.getId());
+            String token = jwtUtil.createToken(client);
+            LoginRes loginRes = new LoginRes(email,token);
+
+            return ResponseEntity.ok(loginRes);
+
+        }catch (BadCredentialsException e){
+            ErrorRes errorResponse = new ErrorRes(HttpStatus.BAD_REQUEST,"Invalid username or password");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }catch (Exception e){
+            ErrorRes errorResponse = new ErrorRes(HttpStatus.BAD_REQUEST, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
-        String token = clientService.login(loginForm);
-        response.put("token",token);
-        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     //GOOGLE signup
-    @PostMapping(value = "/register/{id_token}")
+    @PostMapping(value = "/register-with-google/{id_token}")
     public ResponseEntity<Map<String, Object>> register(@PathVariable String id_token){
         Map<String, Object> response = new HashMap<>();
         // Verify the ID token with Google
@@ -76,9 +102,8 @@ public class ClientController {
             response.put("message","client found");
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
-        Client client1 = null;
+        RegisterForm client1 = null;
         client1.setEmail(email);
-        client1.setRole(Client.Role.CLIENT);
         clientService.createClient(client1);
 
         response.put("email",email);
@@ -175,11 +200,11 @@ public class ClientController {
     }
 
     //CREATE client
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createClient(@RequestBody Client client) {
+    @PostMapping("/register")
+    public ResponseEntity<Map<String, Object>> createClient(@RequestBody RegisterForm registerForm) {
         Map<String, Object> response = new HashMap<>();
 
-        String status = clientService.createClient(client);
+        String status = clientService.createClient(registerForm);
         switch (status) {
             case "name" -> {
                 response.put("message","name");
@@ -187,14 +212,6 @@ public class ClientController {
             }
             case "email" -> {
                 response.put("message","email");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "phoneCheck" -> {
-                response.put("message","invalid phone number : rewrite as +251xxxxxxxxx");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            case "emailCheck" -> {
-                response.put("message","invalid email");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
             case "added" -> {

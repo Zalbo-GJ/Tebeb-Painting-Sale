@@ -1,11 +1,12 @@
 package com.tibeb.userManagement.user;
 
+import com.tibeb.userManagement.loginform.LoginReq;
 import com.tibeb.userManagement.user.model.LoginForm;
 import com.tibeb.userManagement.user.model.PaintingInfo;
-import com.tibeb.userManagement.user.model.RegisterForm;
+import com.tibeb.userManagement.loginform.RegisterForm;
 import com.tibeb.userManagement.client.Client;
 import com.tibeb.userManagement.client.ClientController;
-import com.tibeb.userManagement.user.auth.JwtUtil;
+import com.tibeb.userManagement.auth.JwtUtil;
 import com.tibeb.userManagement.user.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -62,6 +63,12 @@ public class UserService {
     @Value("${UrlEndpoint}")
     private String urlEndpoint;
 
+    //Get id from token
+    public String getIdFromToken (String authorizationHeader){
+        String bearerToken = authorizationHeader.substring(7);
+        return jwtUtil.getUserId(bearerToken);
+    }
+
     //GET painting information from the painting MS
     public PaintingInfo paintingInfo (String paintingId) {
         ResponseEntity<PaintingInfo> paintingInfoResponseEntity;
@@ -116,9 +123,10 @@ public class UserService {
     public String createUser(RegisterForm registerForm) {
 
         User user = new User();
+        user.setFirstName(registerForm.getFirstName());
+        user.setLastName(registerForm.getLastName());
         user.setEmail(registerForm.getEmail());
         user.setPassword(registerForm.getPassword());
-
 
         //attributed that cannot be set by the user
         user.setId(null);
@@ -133,12 +141,6 @@ public class UserService {
         if (userRepository.findByEmail(user.getEmail()).isPresent())
             return "email";
 
-        if (userRepository.findByPhoneNumber(user.getPhoneNumber()).isPresent())
-            return "phone";
-
-        if (userRepository.findByUserName(user.getUserName()).isPresent())
-            return "username";
-
         // Hash the password before storing it
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
@@ -152,47 +154,11 @@ public class UserService {
         return "created";
     }
 
-//    //Phone number checker method
-//    public static boolean isValidPhoneNumber(String phoneNumber) {
-//        // Check if the phone number starts with a '+'
-//        if (!phoneNumber.startsWith("+")) {
-//            return false;
-//        }
-//
-//        // Check the length of the phone number
-//        if (phoneNumber.length() < 12 || phoneNumber.length() > 15) {
-//            return false;
-//        }
-//
-//        // Check the country code
-//        String countryCode = phoneNumber.substring(1, 4);
-//        if (!countryCode.equals("251")) {
-//            return false;
-//        }
-//
-//        // Additional checks can be added here if needed
-//
-//        // If all checks pass, the phone number is valid
-//        return true;
-//    }
-
-//    //Email checker method
-//    public static boolean isValidEmail(String email) {
-//        // Regular expression pattern for email validation
-//        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-//
-//        // Create a Pattern object with the email pattern
-//        Pattern pattern = Pattern.compile(emailPattern);
-//
-//        // Check if the email matches the pattern
-//        return pattern.matcher(email).matches();
-//    }
-
     //Login
-    public String login(LoginForm loginForm){
-        User user = getUserByEmail(loginForm.getEmail());
+    public String login(LoginReq loginReq){
+        User user = getUserByEmail(loginReq.getEmail());
         if(user!= null){
-            if(BCrypt.checkpw(loginForm.getPassword(), user.getPassword())){
+            if(BCrypt.checkpw(loginReq.getPassword(), user.getPassword())){
                 // Create claims for the token
                 Claims claims = Jwts.claims().setSubject(user.getEmail());
                 claims.put("user", user);

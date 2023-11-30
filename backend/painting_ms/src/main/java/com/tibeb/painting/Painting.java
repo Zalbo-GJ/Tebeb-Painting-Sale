@@ -1,6 +1,5 @@
 package com.tibeb.painting;
 
-import org.bson.types.Binary;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -9,7 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,7 +51,7 @@ public class Painting {
     private String clientId;
     private String artistName;
     private double width;
-    private double height;
+    private double length;
     private double price;
     private Genre genre;
     private Type type;

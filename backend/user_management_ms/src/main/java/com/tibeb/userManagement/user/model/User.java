@@ -50,8 +50,9 @@ public class User {
     @Nullable
     private List<String> followingPaintersList = new ArrayList<>();
 
-    public User(String email, String password) {
+    public User(String email, String password, String id) {
         this.email = email;
         this.password = password;
+        this.setId(id);
     }
 }

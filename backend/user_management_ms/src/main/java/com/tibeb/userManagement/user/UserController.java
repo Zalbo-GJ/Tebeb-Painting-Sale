@@ -4,14 +4,16 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.tibeb.userManagement.user.model.RegisterForm;
+import com.tibeb.userManagement.loginform.RegisterForm;
 import com.tibeb.userManagement.loginform.ErrorRes;
 import com.tibeb.userManagement.loginform.LoginReq;
 import com.tibeb.userManagement.loginform.LoginRes;
-import com.tibeb.userManagement.user.auth.JwtUtil;
+import com.tibeb.userManagement.auth.JwtUtil;
 import com.tibeb.userManagement.user.model.User;
 import io.imagekit.sdk.exceptions.*;
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,8 +39,9 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private CustomUserDetailsService userDetailsService;
     @Autowired
+    @Qualifier("customUserAuthenticationManager")
     private AuthenticationManager authenticationManager;
     @Autowired
     private JwtUtil jwtUtil;
@@ -51,7 +54,11 @@ public class UserController {
             Authentication authentication =
                     authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getEmail(), loginReq.getPassword()));
             String email = authentication.getName();
-            User user = new User(email,"");
+
+            // get the user to extract the id
+            User user1 = userService.getUserByEmail(email);
+
+            User user = new User(email,"",user1.getId());
             String token = jwtUtil.createToken(user);
             LoginRes loginRes = new LoginRes(email,token);
 
@@ -65,6 +72,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
     }
+
     //GOOGLE signup
     @PostMapping(value = "/register/{id_token}")
     public ResponseEntity<Map<String, Object>> register(@PathVariable String name, @PathVariable String id_token) {
@@ -168,7 +176,7 @@ public class UserController {
     }
 
     //CREATE user
-    @GetMapping("/register")
+    @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> createUser(@RequestBody RegisterForm registerForm) {
         Map<String, Object> response = new HashMap<>();
 
@@ -178,16 +186,8 @@ public class UserController {
                 response.put("message", "name");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
-            case "username" -> {
-                response.put("message", "username exists");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-            }
             case "email" -> {
                 response.put("message", "email");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-            }
-            case "phone" -> {
-                response.put("message", "phone number exists");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             case "created" -> {
@@ -205,10 +205,17 @@ public class UserController {
         return new ResponseEntity<>(userService.getUsers(), HttpStatus.OK);
     }
 
-    //GET user by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable String id) {
-        return new ResponseEntity<>(userService.getUserById(id), HttpStatus.OK);
+    @GetMapping("id")
+    public ResponseEntity<User> getUserById(@RequestHeader("Authorization") String authorizationHeader) {
+        String id = null;
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
+            id = userService.getIdFromToken(authorizationHeader);
+            return new ResponseEntity<>(userService.getUserById(id), HttpStatus.OK);
+        } else {
+            // Handle the case where the Authorization header doesn't contain a Bearer token
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
     }
 
     //GET user by email

@@ -1,7 +1,5 @@
 package com.tibeb.painting;
 
-import org.bson.BsonBinarySubType;
-import org.bson.types.Binary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -12,14 +10,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -28,11 +21,6 @@ import io.imagekit.sdk.models.FileCreateRequest;
 import io.imagekit.sdk.models.results.Result;
 import io.imagekit.sdk.ImageKit;
 import io.imagekit.sdk.config.Configuration;
-import io.imagekit.sdk.utils.Utils;
-
-
-import net.coobird.thumbnailator.Thumbnails;
-import javax.imageio.ImageIO;
 
 @Service
 public class PaintingService {
@@ -170,7 +158,7 @@ public class PaintingService {
             backUp.setClientId(painting.getClientId());
             backUp.setArtistName(painting.getArtistName());
             backUp.setWidth(painting.getWidth());
-            backUp.setHeight(painting.getHeight());
+            backUp.setLength(painting.getLength());
             backUp.setGenre(painting.getGenre());
             backUp.setType(painting.getType());
             backUp.setDescription(painting.getDescription());
@@ -320,4 +308,10 @@ public class PaintingService {
 //        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "dateAdded"));
 //        return paintingRepository.findAll(pageRequest).getContent();
 //    }
+
+    //Filter
+    public List<Painting> filter (String minPrice, String maxPrice, String minSellerRating, String type, String genre){
+
+return null;
+    }
 }

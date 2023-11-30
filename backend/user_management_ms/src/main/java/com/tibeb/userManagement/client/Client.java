@@ -44,4 +44,9 @@ public class Client {
     private String profileImageId;
     private String backgroundImageId;
     private List<String> paintingIdList = new ArrayList<>();
+    public Client(String email, String password, String id) {
+        this.email = email;
+        this.password = password;
+        this.setId(id);
+    }
 }

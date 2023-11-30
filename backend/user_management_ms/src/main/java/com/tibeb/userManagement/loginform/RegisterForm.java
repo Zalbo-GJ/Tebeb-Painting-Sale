@@ -1,4 +1,4 @@
-package com.tibeb.userManagement.user.model;
+package com.tibeb.userManagement.loginform;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,6 +10,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterForm {
+    private String firstName;
+    private String lastName;
     private String email;
     private String password;
 }

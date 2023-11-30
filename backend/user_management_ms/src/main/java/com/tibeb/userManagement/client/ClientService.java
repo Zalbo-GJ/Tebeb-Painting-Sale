@@ -1,7 +1,11 @@
 package com.tibeb.userManagement.client;
 
+import com.tibeb.userManagement.auth.JwtUtil;
+import com.tibeb.userManagement.loginform.LoginReq;
+import com.tibeb.userManagement.loginform.RegisterForm;
 import com.tibeb.userManagement.user.model.LoginForm;
 import com.tibeb.userManagement.user.model.PaintingInfo;
+import com.tibeb.userManagement.user.model.User;
 import io.imagekit.sdk.ImageKit;
 import io.imagekit.sdk.config.Configuration;
 import io.imagekit.sdk.exceptions.*;
@@ -14,7 +18,9 @@ import io.jsonwebtoken.security.Keys;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -35,6 +41,10 @@ public class ClientService {
     private ClientRepository clientRepository;
     @Autowired
     private RestTemplate restTemplate;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @Value("${app.secretKey}")
     private String SECRET_KEY;
@@ -48,6 +58,12 @@ public class ClientService {
     private String privateKey;
     @Value("${UrlEndpoint}")
     private String urlEndpoint;
+
+    //Get id from token
+    public String getIdFromToken (String authorizationHeader){
+        String bearerToken = authorizationHeader.substring(7);
+        return jwtUtil.getUserId(bearerToken);
+    }
 
     //GET painting information from the painting MS
     public PaintingInfo paintingInfo (String paintingId) {
@@ -125,7 +141,13 @@ public class ClientService {
     }
 
     //CREATE client
-    public String createClient(Client client) {
+    public String createClient(RegisterForm registerForm) {
+
+        Client client = new Client();
+        client.setFirstName(registerForm.getFirstName());
+        client.setLastName(registerForm.getLastName());
+        client.setEmail(registerForm.getEmail());
+        client.setPassword(registerForm.getPassword());
 
         //attributed that cannot be set by the client
         client.setId(null);
@@ -139,28 +161,11 @@ public class ClientService {
         client.setBackgroundImageId(null);
         client.setPaintingIdList(null);
 
-
-        //editing the attributes
-        client.setFirstName(client.getFirstName().toLowerCase());
-        client.setLastName(client.getLastName().toLowerCase());
-        client.setArtistName(client.getArtistName().toLowerCase());
-        client.setEmail(client.getEmail().toLowerCase());
-
-//        //checks if phone is valid using a method
-//        boolean phone = isValidPhoneNumber(client.getPhoneNumber());
-//        if (!phone)
-//            return "phoneCheck";
-
-        //checks if email is valid using a method
-        boolean emailCheck = isValidEmail(client.getEmail());
-        if (!emailCheck)
-            return "emailCheck";
-
         if (clientRepository.findByEmail(client.getEmail()).isPresent())
             return "email";
 
-        // hashing the password and saving it
-        String hashedPassword = BCrypt.hashpw(client.getPassword(), BCrypt.gensalt());
+        // Hash the password before storing it
+        String hashedPassword = passwordEncoder.encode(client.getPassword());
         client.setPassword(hashedPassword);
 
         //save the new painting
@@ -168,51 +173,14 @@ public class ClientService {
         return "added";
     }
 
-    //Phone number checker method
-    public static boolean isValidPhoneNumber(String phoneNumber) {
-        // Check if the phone number starts with a '+'
-        if (!phoneNumber.startsWith("+")) {
-            return false;
-        }
-
-        // Check the length of the phone number
-        if (phoneNumber.length() < 12 || phoneNumber.length() > 15) {
-            return false;
-        }
-
-        // Check the country code
-        String countryCode = phoneNumber.substring(1, 4);
-        if (!countryCode.equals("251")) {
-            return false;
-        }
-
-        // Additional checks can be added here if needed
-
-        // If all checks pass, the phone number is valid
-        return true;
-    }
-
-    //Email checker method
-    public static boolean isValidEmail(String email) {
-        // Regular expression pattern for email validation
-        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-
-        // Create a Pattern object with the email pattern
-        Pattern pattern = Pattern.compile(emailPattern);
-
-        // Check if the email matches the pattern
-        return pattern.matcher(email).matches();
-    }
-
     //Login
-    public String login(LoginForm loginForm){
-        Client client = getClientByEmail(loginForm.getEmail());
+    public String login(LoginReq loginReq){
+        Client client = getClientByEmail(loginReq.getEmail());
         if(client!= null){
-            if(BCrypt.checkpw(loginForm.getPassword(), client.getPassword())){
+            if(BCrypt.checkpw(loginReq.getPassword(), client.getPassword())){
                 // Create claims for the token
                 Claims claims = Jwts.claims().setSubject(client.getEmail());
-                claims.put("clientId", client.getId());
-                claims.put("email", client.getEmail());
+                claims.put("client", client);
 
                 // Generate the token
                 String token = Jwts.builder()
@@ -227,7 +195,7 @@ public class ClientService {
             }
         }
         else {
-            return "user";
+            return "client";
         }
     }
 
@@ -293,16 +261,6 @@ public class ClientService {
         Client clientTempo = this.getClientById(id);
         if (clientTempo == null)
             return "client";
-
-        //validate email structure
-        boolean email = isValidEmail(client.getEmail());
-        if (!email)
-            return "invalid email";
-
-//        //validate phone number structure
-//        boolean phone = isValidPhoneNumber(client.getPhoneNumber());
-//        if (!phone)
-//            return "invalid phone";
 
         //temporarily delete the client for checking purpose
         clientRepository.deleteById(id);

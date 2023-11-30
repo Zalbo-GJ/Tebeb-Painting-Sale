@@ -161,7 +161,6 @@ public class PaintingController {
             response.put("message","Updated successfully!");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
-
     }
 
     //DELETE painting by id
@@ -242,6 +241,19 @@ public class PaintingController {
         recommendation.add(paintingService.mostLikedPaintings());
 
         return new ResponseEntity<>(recommendation, HttpStatus.OK) ;
+    }
+
+    //Filter
+    @GetMapping("/filter")
+    public ResponseEntity<List<Painting>> filter(
+            @RequestParam (value = "minPrice", defaultValue = "0") String minPrice,
+            @RequestParam (value = "maxPrice", defaultValue = "0") String maxPrice,
+            @RequestParam (value = "minSellerRating", defaultValue = "0") String minSellerRating,
+            @RequestParam (value = "type", defaultValue = "0") String type,
+            @RequestParam (value = "genre", defaultValue = "0") String genre) {
+
+
+return null;
     }
 
 }
