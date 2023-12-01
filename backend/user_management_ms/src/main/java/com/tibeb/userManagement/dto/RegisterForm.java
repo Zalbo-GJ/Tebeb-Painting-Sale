@@ -1,4 +1,4 @@
-package com.tibeb.userManagement.loginform;
+package com.tibeb.userManagement.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

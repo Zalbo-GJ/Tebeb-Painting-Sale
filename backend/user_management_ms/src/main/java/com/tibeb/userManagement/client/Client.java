@@ -33,6 +33,8 @@ public class Client {
     private String phoneNumber;
     private String email;
     private String password;
+
+    //take out region
     private Region region;
     private Role role;
     private int followers;
@@ -44,6 +46,10 @@ public class Client {
     private String profileImageId;
     private String backgroundImageId;
     private List<String> paintingIdList = new ArrayList<>();
+    private List<String> savedPaintingIdList = new ArrayList<>();
+    private List<String> boughtPaintingIdList = new ArrayList<>();
+    private List<String> likedPaintingIdList = new ArrayList<>();
+    private List<String> followingPaintersList = new ArrayList<>();
     public Client(String email, String password, String id) {
         this.email = email;
         this.password = password;

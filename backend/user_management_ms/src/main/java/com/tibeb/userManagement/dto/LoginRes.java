@@ -1,4 +1,4 @@
-package com.tibeb.userManagement.loginform;
+package com.tibeb.userManagement.dto;
 
 import lombok.*;
 
@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoginReq {
+public class LoginRes {
     private String email;
-    private String password;
+    private String token;
 }

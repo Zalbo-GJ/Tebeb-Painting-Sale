@@ -1,9 +1,8 @@
 package com.tibeb.userManagement.user;
 
-import com.tibeb.userManagement.loginform.LoginReq;
-import com.tibeb.userManagement.user.model.LoginForm;
-import com.tibeb.userManagement.user.model.PaintingInfo;
-import com.tibeb.userManagement.loginform.RegisterForm;
+import com.tibeb.userManagement.dto.LoginReq;
+import com.tibeb.userManagement.dto.PaintingInfo;
+import com.tibeb.userManagement.dto.RegisterForm;
 import com.tibeb.userManagement.client.Client;
 import com.tibeb.userManagement.client.ClientController;
 import com.tibeb.userManagement.auth.JwtUtil;
@@ -223,16 +222,6 @@ public class UserService {
         User userTempo = this.getUserById(id);
         if (userTempo == null)
             return "user";
-
-//        //validate email structure
-//        boolean email = isValidEmail(user.getEmail());
-//        if (!email)
-//            return "invalid email";
-
-//        //validate phone number structure
-//        boolean phone = isValidPhoneNumber(user.getPhoneNumber());
-//        if (!phone)
-//            return "invalid phone";
 
         //temporarily delete the user for checking purpose
         userRepository.deleteById(id);

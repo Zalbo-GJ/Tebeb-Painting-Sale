@@ -1,10 +1,9 @@
 package com.tibeb.userManagement.client;
 
 import com.tibeb.userManagement.auth.JwtUtil;
-import com.tibeb.userManagement.loginform.LoginReq;
-import com.tibeb.userManagement.loginform.RegisterForm;
-import com.tibeb.userManagement.user.model.LoginForm;
-import com.tibeb.userManagement.user.model.PaintingInfo;
+import com.tibeb.userManagement.dto.LoginReq;
+import com.tibeb.userManagement.dto.RegisterForm;
+import com.tibeb.userManagement.dto.PaintingInfo;
 import com.tibeb.userManagement.user.model.User;
 import io.imagekit.sdk.ImageKit;
 import io.imagekit.sdk.config.Configuration;
@@ -18,21 +17,16 @@ import io.jsonwebtoken.security.Keys;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import java.util.regex.Pattern;
+import java.util.*;
 
 @Service
 public class ClientService {
@@ -76,6 +70,54 @@ public class ClientService {
             return null;
         }
         return paintingInfoResponseEntity.getBody();
+    }
+
+    //update seller rating
+    public String updateSellerRating(String clientId, int rating) {
+        String updateRatingUrl = urlEndpoint + "/update-rating/" + clientId + "/" + rating;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                updateRatingUrl,
+                HttpMethod.PUT,
+                entity,
+                String.class
+        );
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            return "updated";
+        } else if (response.getStatusCode() == HttpStatus.NOT_FOUND) {
+            return "not found";
+        } else {
+            return "internal server error";
+        }
+    }
+
+    //GET list of painting using the client ID information from the painting MS
+    public List<PaintingInfo> listOfPaintingByClientId (String clientId) {
+        ResponseEntity<PaintingInfo[]> paintingInfoResponseEntity;
+
+        try {
+            paintingInfoResponseEntity = restTemplate
+                    .getForEntity(urlEndpoint + "/api/paint/clientId/" + clientId, PaintingInfo[].class);
+
+            if (paintingInfoResponseEntity.getStatusCode().is2xxSuccessful()) {
+                PaintingInfo[] paintingInfos = paintingInfoResponseEntity.getBody();
+                return Optional.ofNullable(paintingInfos)
+                        .map(Arrays::asList)
+                        .orElse(Collections.emptyList());
+            } else {
+                return Collections.emptyList();
+            }
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 
     //UPDATE add profile picture for client
@@ -235,25 +277,6 @@ public class ClientService {
         return client;
     }
 
-    // GET clients by region
-    public List<Client> getClientsByRegion(String region) {
-        Optional<List<Client>> optionalClients = clientRepository.findByRegion(region);
-
-        if (optionalClients.isPresent()) {
-            List<Client> clients = optionalClients.get();
-
-            for (Client client : clients) {
-                // Null out the password for each client
-                client.setPassword(null);
-            }
-
-            return clients;
-        } else {
-            // Return an empty list if no clients are found for the specified region
-            return Collections.emptyList();
-        }
-    }
-
     //UPDATE name and email
     public String updateClient(String id, Client client) {
 
@@ -298,6 +321,41 @@ public class ClientService {
         return "updated";
     }
 
+    //ADD painting to the bought painting list
+    public String addPaintingToBoughtPaintingList(String id, String paintingId) {
+
+        //Check painting from the painting MS
+        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
+        if (paintingInfo == null)
+            return "painting";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //delete user to update and upload the savedPainting
+        clientRepository.deleteById(id);
+
+        //add new painting to the saved painting id list
+        List<String> savedPaintings = new ArrayList<>(clientTempo.getSavedPaintingIdList());
+        savedPaintings.add(paintingId);
+        clientTempo.setSavedPaintingIdList(savedPaintings);
+
+        ResponseEntity<PaintingInfo> paintingInfoResponseEntity;
+
+        try {
+            restTemplate.put(paintingURL + "/api/paint/sold/" + paintingId, null);
+        } catch (HttpClientErrorException e){
+            return "painting";
+        }
+
+        //save updated user
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
     //ADD painting to the painting list
     public String addPaintingToPaintingList(String id, String paintingId) {
 
@@ -321,6 +379,238 @@ public class ClientService {
         clientTempo.setPaintingIdList(savedPaintings);
 
         //save updated client
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //REMOVE painting from painting list
+    public String removePaintingFromPaintingList(String id, String paintingId) {
+
+        //Check painting from the painting MS
+        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
+        if (paintingInfo == null)
+            return "painting";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if client exists
+        if (clientTempo == null)
+            return "client";
+
+        List<String> savedPaintings = new ArrayList<>(clientTempo.getPaintingIdList());
+
+        //check if the id is in the list
+        if (!savedPaintings.equals(paintingId))
+            return "no such painting";
+
+        //remove painting from the painting id list
+        savedPaintings.remove(paintingId);
+        clientTempo.setPaintingIdList(savedPaintings);
+
+        //save updated client
+        clientRepository.deleteById(id);
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //ADD painting to the saved painting list
+    public String addPaintingToSavedPaintingList(String id, String paintingId) {
+
+        //Check painting from the painting MS
+        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
+        if (paintingInfo == null)
+            return "painting";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //delete user to update and upload the savedPainting
+        clientRepository.deleteById(id);
+
+        //add new painting to the saved painting id list
+        List<String> savedPaintings = new ArrayList<>(clientTempo.getSavedPaintingIdList());
+        savedPaintings.add(paintingId);
+        clientTempo.setSavedPaintingIdList(savedPaintings);
+
+        //save updated user
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //REMOVE painting from the saved painting list
+    public String removePaintingFromSavedPaintingList(String id, String paintingId) {
+
+        //Check painting from the painting MS
+        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
+        if (paintingInfo == null)
+            return "painting";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //delete user to update and upload the savedPainting
+        clientRepository.deleteById(id);
+
+        //remove painting to the saved painting id list
+        List<String> savedPaintings = new ArrayList<>(clientTempo.getSavedPaintingIdList());
+        savedPaintings.remove(paintingId);
+        clientTempo.setSavedPaintingIdList(savedPaintings);
+
+        //save updated user
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //ADD painting to the liked painting list
+    public String addPaintingToLikedPaintingList(String id, String paintingId) {
+
+        //Check painting from the painting MS
+        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
+        if (paintingInfo == null)
+            return "painting";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //add new painting to the saved painting id list
+        List<String> likedPaintings = new ArrayList<>(clientTempo.getLikedPaintingIdList());
+
+        //check if it is already liked
+        if (likedPaintings.contains(paintingId))
+            return "already liked";
+
+        likedPaintings.add(paintingId);
+        clientTempo.setLikedPaintingIdList(likedPaintings);
+
+        ResponseEntity<PaintingInfo> paintingInfoResponseEntity;
+
+        try {
+            restTemplate.put(paintingURL + "/api/paint/like/add/" + paintingId, null);
+        } catch (HttpClientErrorException e){
+            return "painting";
+        }
+
+        //delete user to update and upload
+        clientRepository.deleteById(id);
+
+        //save updated user
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //REMOVE painting to the liked painting list
+    public String removePaintingFromLikedPaintingList(String id, String paintingId) {
+
+        //Check painting from the painting MS
+        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
+        if (paintingInfo == null)
+            return "painting";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //add new painting to the saved painting id list
+        List<String> likedPaintings = new ArrayList<>(clientTempo.getLikedPaintingIdList());
+
+        //check if it is already liked
+        if (!likedPaintings.contains(paintingId))
+            return "does not exist";
+
+        likedPaintings.remove(paintingId);
+        clientTempo.setLikedPaintingIdList(likedPaintings);
+
+        ResponseEntity<PaintingInfo> paintingInfoResponseEntity;
+
+        try {
+            restTemplate.put( paintingURL + "/api/paint/like/sub/" + paintingId, null);
+        } catch (HttpClientErrorException e){
+            return "painting";
+        }
+
+        //delete user to update and upload
+        clientRepository.deleteById(id);
+
+        //save updated user
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //ADD followed painters to the following painters list
+    public String addToFollowingPaintersList(String id, String clientId) {
+
+        //Check client from client controller
+        Client client = this.getClientById(clientId);
+        if (client == null)
+            return "client";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //add follower to the following painters id list
+        List<String> followingPaintersList = new ArrayList<>(clientTempo.getFollowingPaintersList());
+
+        //check if it is already followed
+        if (followingPaintersList.contains(clientId))
+            return "already followed";
+
+        followingPaintersList.add(clientId);
+        clientTempo.setFollowingPaintersList(followingPaintersList);
+
+        ResponseEntity<PaintingInfo> paintingInfoResponseEntity;
+
+        //delete user to update and upload
+        clientRepository.deleteById(id);
+
+        //save updated user
+        clientRepository.save(clientTempo);
+        return "updated";
+    }
+
+    //REMOVE followed painters to the following painters list
+    public String removeFromFollowingPaintersList(String id, String clientId) {
+
+        //Check client from client controller
+        Client client = this.getClientById(clientId);
+        if (client == null)
+            return "client";
+
+        Client clientTempo = this.getClientById(id);
+
+        //Check if user exists
+        if (clientTempo == null)
+            return "user";
+
+        //add follower to the following painters id list
+        List<String> followingPaintersList = new ArrayList<>(clientTempo.getFollowingPaintersList());
+
+        //check if it is already followed
+        if (!followingPaintersList.contains(clientId))
+            return "not followed";
+
+        followingPaintersList.remove(clientId);
+        clientTempo.setFollowingPaintersList(followingPaintersList);
+
+        ResponseEntity<PaintingInfo> paintingInfoResponseEntity;
+
+        //delete user to update and upload
+        clientRepository.deleteById(id);
+
+        //save updated user
         clientRepository.save(clientTempo);
         return "updated";
     }
@@ -375,36 +665,6 @@ public class ClientService {
         return "updated";
     }
 
-    //REMOVE painting from painting list
-    public String removePaintingFromPaintingList(String id, String paintingId) {
-
-        //Check painting from the painting MS
-        PaintingInfo paintingInfo = this.paintingInfo(paintingId);
-        if (paintingInfo == null)
-            return "painting";
-
-        Client clientTempo = this.getClientById(id);
-
-        //Check if client exists
-        if (clientTempo == null)
-            return "client";
-
-        List<String> savedPaintings = new ArrayList<>(clientTempo.getPaintingIdList());
-
-        //check if the id is in the list
-        if (!savedPaintings.equals(paintingId))
-            return "no such painting";
-
-        //remove painting from the painting id list
-        savedPaintings.remove(paintingId);
-        clientTempo.setPaintingIdList(savedPaintings);
-
-        //save updated client
-        clientRepository.deleteById(id);
-        clientRepository.save(clientTempo);
-        return "updated";
-    }
-
     //DELETE client
     public int deleteClient(String id) throws ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
 
@@ -445,6 +705,14 @@ public class ClientService {
         double averageRating = ( ( client.getRating() * ( client.getNumberOfPeopleWhoHaveRated() - 1 ) ) + rating ) / (client.getNumberOfPeopleWhoHaveRated());
 
         client.setRating(averageRating);
+
+        //update seller rating in all the sellers paintings BEGIN
+        String response = this.updateSellerRating(id, rating);
+
+        if (response.equals("internal server error")){
+            return "internal server error";
+        } else if (response.equals("not found"))
+            return "no paintings found";
 
         clientRepository.deleteById(id);
         clientRepository.save(client);

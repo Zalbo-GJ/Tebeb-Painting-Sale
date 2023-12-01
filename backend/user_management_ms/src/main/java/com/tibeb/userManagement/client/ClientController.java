@@ -5,12 +5,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.tibeb.userManagement.auth.JwtUtil;
-import com.tibeb.userManagement.loginform.ErrorRes;
-import com.tibeb.userManagement.loginform.LoginReq;
-import com.tibeb.userManagement.loginform.LoginRes;
-import com.tibeb.userManagement.loginform.RegisterForm;
+import com.tibeb.userManagement.dto.ErrorRes;
+import com.tibeb.userManagement.dto.LoginReq;
+import com.tibeb.userManagement.dto.LoginRes;
+import com.tibeb.userManagement.dto.RegisterForm;
 import com.tibeb.userManagement.user.CustomUserDetailsService;
-import com.tibeb.userManagement.user.model.User;
 import io.imagekit.sdk.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -241,12 +240,6 @@ public class ClientController {
         return new ResponseEntity<>(clientService.getClientByEmail(email),HttpStatus.OK);
     }
 
-    //GET user by region
-    @GetMapping("/region/{region}")
-    public ResponseEntity<List<Client>> getClientByRegion(@PathVariable String region){
-        return new ResponseEntity<>(clientService.getClientsByRegion(region),HttpStatus.OK);
-    }
-
     //UPDATE name and email
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateClient(@PathVariable String id, @RequestBody Client client) {
@@ -418,6 +411,14 @@ public class ClientController {
             case "client" ->{
                 response.put("message", "Client not found");
                 return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            case "internal server error" ->{
+                response.put("message", "Can not reach painting MS");
+                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            case "not found" ->{
+                response.put("message", "paintings not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
             }
             case "rating" ->{
                 response.put("message","updated");

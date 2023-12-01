@@ -55,6 +55,7 @@ public class Painting {
     private double price;
     private Genre genre;
     private Type type;
+    private int sellerRating;
     private boolean sold;
     private LocalDateTime dateAdded;
     private String description;

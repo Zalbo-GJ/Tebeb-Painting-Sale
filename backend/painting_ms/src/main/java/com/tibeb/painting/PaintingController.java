@@ -71,10 +71,16 @@ public class PaintingController {
         return new ResponseEntity<>(paintingService.getAllPaintings(), HttpStatus.OK) ;
     }
 
-    //GET all paintings trial
-    @GetMapping("/trial")
-    public ResponseEntity<List<Painting>> getAllPaintingsTrial(String userId) {
-        return new ResponseEntity<>(paintingService.getAllPaintings(), HttpStatus.OK) ;
+    //GET all paintings with likes
+    @GetMapping("/get/{userId}")
+    public ResponseEntity<List<Painting>> getAllPaintingsWithLikes(@PathVariable String userId) {
+        return new ResponseEntity<>(paintingService.getAllPaintingsWithLikes(userId), HttpStatus.OK) ;
+    }
+
+    //GET all paintings with likes
+    @GetMapping("/liked-paintings/{userId}")
+    public ResponseEntity<List<Painting>> getPaintingsWithLikesOnly(@PathVariable String userId) {
+        return new ResponseEntity<>(paintingService.getPaintingsWithLikesOnly(userId), HttpStatus.OK) ;
     }
 
     //GET painting by ID
@@ -111,6 +117,21 @@ public class PaintingController {
         if (result.isEmpty())
             return new ResponseEntity<>(result, HttpStatus.OK);
         return new ResponseEntity<>(result, HttpStatus.OK) ;
+    }
+
+    //GET by price
+    @GetMapping("/price")
+    public ResponseEntity<List<Painting>> getPaintingsByPrice(
+            @RequestParam(required = false, defaultValue = "0") int min,
+            @RequestParam(required = false, defaultValue = "0") int max
+    ) {
+        List<Painting> paintings = paintingService.getPaintingByPrice(min, max);
+
+        if (paintings.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(paintings);
+        }
     }
 
     //UPDATE painting by id
@@ -157,6 +178,22 @@ public class PaintingController {
             response.put("message","Painting already sold you dumb asses!");
             return new ResponseEntity<>(response, HttpStatus.OK);
 
+        } else{
+            response.put("message","Updated successfully!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+    }
+
+    //update seller rating (to be used by the user management ms)
+    @PutMapping("/update-rating/{clientId}/{rating}")
+    public ResponseEntity<Map<String, Object>> updateSellerRating(@PathVariable String clientId, @PathVariable int rating){
+        Map<String, Object> response = new HashMap<>();
+
+        String status = paintingService.updateSellerRating(clientId,rating);
+
+        if (Objects.equals(status, "not found")) {
+            response.put("message", "Painting not found!");
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         } else{
             response.put("message","Updated successfully!");
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -246,14 +283,15 @@ public class PaintingController {
     //Filter
     @GetMapping("/filter")
     public ResponseEntity<List<Painting>> filter(
-            @RequestParam (value = "minPrice", defaultValue = "0") String minPrice,
-            @RequestParam (value = "maxPrice", defaultValue = "0") String maxPrice,
-            @RequestParam (value = "minSellerRating", defaultValue = "0") String minSellerRating,
+            @RequestParam (value = "minPrice", defaultValue = "0") int minPrice,
+            @RequestParam (value = "maxPrice", defaultValue = "0") int maxPrice,
+            @RequestParam (value = "minSellerRating", defaultValue = "0") int minSellerRating,
             @RequestParam (value = "type", defaultValue = "0") String type,
             @RequestParam (value = "genre", defaultValue = "0") String genre) {
 
-
-return null;
+        List<Painting> filtered = paintingService.filter(minPrice, maxPrice, minSellerRating, type, genre);
+        if (filtered.isEmpty())
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(filtered, HttpStatus.OK) ;
     }
-
 }

@@ -12,9 +12,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.imagekit.sdk.exceptions.*;
 import io.imagekit.sdk.models.FileCreateRequest;
@@ -39,6 +42,7 @@ public class PaintingService {
 
     public PaintingService() {}
 
+    //Add image
     public String addImage(String id, MultipartFile file) throws IOException, ForbiddenException, TooManyRequestsException, InternalServerException, UnauthorizedException, BadRequestException, UnknownException {
 
         //IMAGE upload configuration
@@ -90,18 +94,21 @@ public class PaintingService {
         return paintingRepository.findAll();
     }
 
-    //GET all paintings trial
-    public List<Painting> getAllPaintingsTrial(String userId) {
-        List<Painting> paintingList = paintingRepository.findAll();
+    //GET all paintings with likes
+    public List<Painting> getAllPaintingsWithLikes(String userId) {
+        return this.getListWithLikes(paintingRepository.findAll(), userId);
+    }
 
-        if (paintingList.isEmpty())
-            return null;
+    //GET paintings with likes only
+    public List<Painting> getPaintingsWithLikesOnly(String userId) {
+        List<Painting> paintingList = this.getListWithLikes(paintingRepository.findAll(), userId);
+        List<Painting> paintingsWhichAreLiked = new ArrayList<>();
 
         for (Painting painting : paintingList){
-            if (painting.listOfIdThatLikedThePainting.contains(userId))
-                painting.isLikedByUser();
+            if (painting.getListOfIdThatLikedThePainting().contains(userId))
+                paintingsWhichAreLiked.add(painting);
         }
-        return paintingList;
+        return paintingsWhichAreLiked;
     }
 
     //GET  painting by ID
@@ -121,7 +128,7 @@ public class PaintingService {
     public List<Painting> getPaintingByClientId(String partialString) {
         Optional<List<Painting>> optionalPaintingList = paintingRepository.findByClientId(partialString);
 
-        return optionalPaintingList.orElse(null);
+        return optionalPaintingList.orElse(new ArrayList<>());
 
 //        Query query = new Query();
 //        query.addCriteria(Criteria.where("clientId").regex(".*" + partialString + ".*"));
@@ -131,6 +138,10 @@ public class PaintingService {
     //search by partial name of the genre
     public List<Painting> getPaintingByGenre(String partialString) {
         partialString = partialString.toUpperCase();
+
+        if (partialString.equals("0"))
+            return this.getAllPaintings();
+
         Query query = new Query();
         query.addCriteria(Criteria.where("genre").regex(".*" + partialString + ".*"));
         return mongoTemplate.find(query, Painting.class);
@@ -139,8 +150,44 @@ public class PaintingService {
     //search by partial name of the type
     public List<Painting> getPaintingByType(String partialString) {
         Query query = new Query();
+
+        if (partialString.equals("0")){
+            return paintingRepository.findAll();
+        }
+
+
         query.addCriteria(Criteria.where("type").regex(".*" + partialString + ".*"));
         return mongoTemplate.find(query, Painting.class);
+    }
+
+    //Price filter
+    public List<Painting> getPaintingByPrice(int min, int max) {
+        Optional<List<Painting>> paintings;
+
+        if (min == 0 && max == 0) {
+            paintings = Optional.of(paintingRepository.findAll());
+        } else if (min == 0) {
+            paintings = paintingRepository.findByPriceLessThanEqual(max);
+        } else if (max == 0) {
+            paintings = paintingRepository.findByPriceGreaterThanEqual(min);
+        } else {
+            paintings = paintingRepository.findByPriceBetween(min, max);
+        }
+
+        return paintings.orElse(new ArrayList<>());
+
+    }
+
+    //Seller rating filter
+    public List<Painting> getPaintingBySellerRating(int rating) {
+        Optional<List<Painting>> paintings;
+
+        if (rating == 0)
+            return this.getAllPaintings();
+
+        paintings = paintingRepository.findBySellerRating(rating);
+
+        return paintings.orElse(new ArrayList<>());
     }
 
     //UPDATE painting using id
@@ -195,6 +242,20 @@ public class PaintingService {
         //save updated painting
         paintingRepository.save(painting);
         return "Updated Successfully!";
+    }
+
+    //update seller rating (to be used by the user management ms)
+    public String updateSellerRating(String clientId, int rating) {
+        String response = "";
+        List<Painting> paintingList = this.getPaintingByClientId(clientId);
+        if (paintingList.isEmpty())
+            return null;
+
+        for(Painting painting : paintingList){
+            painting.setSellerRating(rating);
+            response = this.updatePainting(painting.getId(),painting);
+        }
+        return response;
     }
 
     //DELETE movie by id
@@ -301,6 +362,18 @@ public class PaintingService {
         return paintingRepository.findAll(pageRequest).getContent();
     }
 
+    //Useful methods to avoid redundancy
+    public List<Painting> getListWithLikes(List<Painting> paintingList, String userId) {
+        if (paintingList.isEmpty())
+            return new ArrayList<>();
+
+        for (Painting painting : paintingList){
+            if (painting.getListOfIdThatLikedThePainting().contains(userId))
+                painting.setLikedByUser(true);
+        }
+        return paintingList;
+    }
+
     // take this to user ms
 //    //popular painters
 //    public List<Painting> popularPainters() {
@@ -310,8 +383,64 @@ public class PaintingService {
 //    }
 
     //Filter
-    public List<Painting> filter (String minPrice, String maxPrice, String minSellerRating, String type, String genre){
+    public List<Painting> filter (int minPrice, int maxPrice, int minSellerRating, String type, String genre){
 
-return null;
+        List<Painting> priceFiltered = new ArrayList<>();
+        List<Painting> ratingFiltered = new ArrayList<>();
+        List<Painting> typeFiltered = new ArrayList<>();
+        List<Painting> genreFiltered = new ArrayList<>();
+
+        //price filter
+        List<Painting> priceFilter = this.getPaintingByPrice(minPrice, maxPrice);
+        if (priceFilter.isEmpty())
+            return new ArrayList<>();
+
+        priceFiltered.addAll(priceFilter);
+
+
+        //seller rating filter
+        List<Painting> sellerRatingFilter = this.getPaintingBySellerRating(minSellerRating);
+        if (sellerRatingFilter.isEmpty())
+            return new ArrayList<>();
+
+        ratingFiltered.addAll(sellerRatingFilter);
+
+
+        //Type filter
+        List<Painting> typeFilter = this.getPaintingByType(type);
+        if (typeFilter.isEmpty())
+            return new ArrayList<>();
+
+        typeFiltered.addAll(typeFilter);
+
+        //Genre filter
+        List<Painting> genreFilter = this.getPaintingByGenre(genre);
+        if (genreFilter.isEmpty())
+            return new ArrayList<>();
+
+        genreFiltered.addAll(genreFilter);
+
+        List<Painting> filtered = filterByPaintingId(priceFiltered, ratingFiltered, typeFiltered, genreFiltered);
+
+        return filtered;
+
+    }
+    private List<Painting> filterByPaintingId(List<Painting> list1, List<Painting> list2, List<Painting> list3, List<Painting> list4) {
+        Set<String> ids1 = list1.stream().map(Painting::getId).collect(Collectors.toSet());
+        Set<String> ids2 = list2.stream().map(Painting::getId).collect(Collectors.toSet());
+        Set<String> ids3 = list3.stream().map(Painting::getId).collect(Collectors.toSet());
+        Set<String> ids4 = list4.stream().map(Painting::getId).collect(Collectors.toSet());
+
+        ids1.retainAll(ids2);
+        ids1.retainAll(ids3);
+        ids1.retainAll(ids4);
+
+        List<Painting> filtered = new ArrayList<>();
+        for (Painting painting : list1) {
+            if (ids1.contains(painting.getId())) {
+                filtered.add(painting);
+            }
+        }
+        return filtered;
     }
 }
