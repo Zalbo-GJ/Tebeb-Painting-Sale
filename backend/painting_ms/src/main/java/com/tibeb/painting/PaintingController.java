@@ -18,6 +18,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/paint")
+@CrossOrigin(origins = "*")
 public class PaintingController {
 
     @Autowired

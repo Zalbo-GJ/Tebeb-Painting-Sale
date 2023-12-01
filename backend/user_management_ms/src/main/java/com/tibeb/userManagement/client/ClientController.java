@@ -31,6 +31,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/clients")
+@CrossOrigin(origins = "*")
 public class ClientController {
 
     @Autowired
