@@ -383,7 +383,7 @@ public class PaintingService {
 //    }
 
     //Filter
-    public List<Painting> filter (int minPrice, int maxPrice, int minSellerRating, String type, String genre){
+    public List<Painting> filter (int minPrice, int maxPrice, int minSellerRating, List<String> type, List<String> genre){
 
         List<Painting> priceFiltered = new ArrayList<>();
         List<Painting> ratingFiltered = new ArrayList<>();
@@ -407,24 +407,42 @@ public class PaintingService {
 
 
         //Type filter
-        List<Painting> typeFilter = this.getPaintingByType(type);
-        if (typeFilter.isEmpty())
-            return new ArrayList<>();
+        List<Painting> typeFilter = new ArrayList<>();
 
-        typeFiltered.addAll(typeFilter);
+        if (!(type == null)){
+            for (String type1 : type){
+                typeFilter.addAll(this.getPaintingByType(type1));
+            }
+            if (typeFilter.isEmpty())
+                return new ArrayList<>();
+            typeFiltered.addAll(typeFilter);
+        } else {
+            typeFiltered.addAll(this.getAllPaintings());
+        }
 
         //Genre filter
-        List<Painting> genreFilter = this.getPaintingByGenre(genre);
-        if (genreFilter.isEmpty())
-            return new ArrayList<>();
+        List<Painting> genreFilter = new ArrayList<>();
 
-        genreFiltered.addAll(genreFilter);
+        if (!(genre == null)){
+            for (String genre1 : genre){
+                genreFilter.addAll(this.getPaintingByGenre(genre1));
+            }
+            if (genreFilter.isEmpty())
+                return new ArrayList<>();
+            genreFiltered.addAll(genreFilter);
+        } else {
+            genreFiltered.addAll(this.getAllPaintings());
+        }
 
+        //Filter all by painting id
         List<Painting> filtered = filterByPaintingId(priceFiltered, ratingFiltered, typeFiltered, genreFiltered);
 
+        //later return with likes
         return filtered;
 
     }
+
+    //filter by id
     private List<Painting> filterByPaintingId(List<Painting> list1, List<Painting> list2, List<Painting> list3, List<Painting> list4) {
         Set<String> ids1 = list1.stream().map(Painting::getId).collect(Collectors.toSet());
         Set<String> ids2 = list2.stream().map(Painting::getId).collect(Collectors.toSet());
