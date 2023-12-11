@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           : Material(
         color:Colors.white,
         child: Padding(
-          padding: const EdgeInsets.only(top: 80,left: 15,right: 15),
+          padding: const EdgeInsets.only(top: 20,left: 15,right: 15),
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Column(
@@ -255,7 +255,7 @@ class _LoginPageState extends State<LoginPage> {
                               if (value != null && value.isEmpty) {
                                 passwordError = 'Enter a password';
                                 return passwordError;
-                              } else if (value!.length < 8) {
+                              } else if (value!.length < 1) {
                                 passwordError =
                                 'password length can\'t be lessthan 8';
                                 return passwordError;
