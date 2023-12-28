@@ -4,7 +4,7 @@ import '../models/painting.dart';
 import '../utils/constants.dart';
 
 class ApiService{
-  Future<List<Painting>?> getDeliveries() async {
+  Future<List<Painting>?> getPaintings() async {
     try {
       var dio = Dio();
       Response response;
@@ -20,7 +20,7 @@ class ApiService{
       print(e);
     }
   }
-  Future<List<Painting>?> searchDelivery(String query) async {
+  Future<List<Painting>?> searchPainting(String query) async {
     try {
       var dio = Dio();
       Response response;

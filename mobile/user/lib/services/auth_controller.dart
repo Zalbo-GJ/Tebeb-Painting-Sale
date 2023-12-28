@@ -22,9 +22,9 @@ class AuthController extends GetxController {
     final hasToken = await localStorage.value.readFromStorage('Token');
 
     if (hasToken != '') {
-      isAuthenticated.value = true;
+      isAuthenticated.value = false;
     } else {
-      isAuthenticated.value = true;
+      isAuthenticated.value = false;
     }
   }
 
@@ -44,13 +44,12 @@ class AuthController extends GetxController {
 
       localStorage.value.storeUserInfo(
           email: user.email.toString(),
-          // image: user.image.toString(),
           name: user.name.toString(), image: '');
 
       isAuthenticated.value = true;
     } catch (e) {
       if (e is DioException) {
-        var message = e.response!.data['message'].toString();
+        var message = e.response!.data['email'].toString();
 
         statusMessage.value = message;
       }
@@ -60,18 +59,20 @@ class AuthController extends GetxController {
 
   Future<void> register(
       {required String email,
-        required String name,
+        required String firstName,
+        required String lastName,
         required String password}) async {
     try {
       String statusCode = await authService.value.register(
           email: email,
-          name: name,
+          firstName: firstName,
+          lastName: lastName,
           password: password);
 
       if (statusCode == '200') {
         isRegistered.value = true;
         statusMessage.value =
-        "User $email Registration was Successful. Verify your email!";
+        "User $email Registration was Successful.";
       } else {
         isRegistered.value = false;
       }

@@ -27,9 +27,9 @@ class SplashScreen extends StatelessWidget {
       body: AnimatedSplashScreen(
         splash: Image.asset('assets/images/logo_with_name.png'),
         duration: 3000,
-        curve: Curves.easeInOut,
+        curve: Curves.bounceOut,
         splashIconSize: 350,
-        splashTransition: SplashTransition.slideTransition,
+        splashTransition: SplashTransition.scaleTransition,
         animationDuration: const Duration(milliseconds: 1500),
         backgroundColor: mainBackgroundColor,
         pageTransitionType: PageTransitionType.fade,
